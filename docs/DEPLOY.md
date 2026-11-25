@@ -239,6 +239,25 @@ The API version defaults to `2023-08-01`. If Cashfree asks you to move to a newe
 
 **Migrations** are forward-only and run before the new code goes live. Keep schema changes additive (add columns or tables first, and remove old ones in a later release), so the previous version keeps working during a deploy or a rollback.
 
+## Releasing a version
+
+Every release gets a version number, a section in [CHANGELOG.md](../CHANGELOG.md) and a git tag.
+
+1. As changes land, add a line for each under **Unreleased** in the changelog.
+2. When you're ready to release, pick the number: patch (`1.0.1`) for fixes only, minor (`1.1.0`) when there are new features, major (`2.0.0`) when admins or API users must change something.
+3. Rename **Unreleased** to the new version and date, add a fresh empty **Unreleased** above it, update the compare links at the bottom, and set `"version"` in the `package.json` files to match.
+4. Commit, then tag and push the tag:
+
+   ```bash
+   git tag -a v1.1.0 -m "Saralix 1.1.0"
+   git push origin v1.1.0
+   ```
+
+5. Deploy that commit: **Deploy** for staging, then **Rollout** (or **Deploy** for production).
+6. Optional: create a GitHub release from the tag and paste the changelog section into it.
+
+To see what a site is running, compare the commit in the latest **Deploy** run with `git describe --tags <commit>`.
+
 ## Running the same steps by hand
 
 ```bash

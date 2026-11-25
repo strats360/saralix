@@ -259,3 +259,5 @@ You add the credentials to a `staging` and a `production` GitHub environment, th
 
 - **Holidays:** the demo seed's festival dates are placeholders. Load your official state holiday list.
 - **Leave policy defaults** (CL 7, SL 7, EL 18 monthly with 30 carry forward): HR should confirm them against your policy and the Shops and Establishments Act for your state.
+
+What changed in each version: [CHANGELOG.md](CHANGELOG.md).
