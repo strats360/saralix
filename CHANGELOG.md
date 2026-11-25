@@ -6,7 +6,9 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- The health check, control plane and platform console showed version 1.4.0, an old internal number. They now show the release version, and a test keeps it in step with package.json and this changelog.
 
 ### Planned
 

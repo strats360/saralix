@@ -13,7 +13,8 @@ import { invalidateFlags } from "../services/flags";
 export const flagRoutes = new Hono<AppEnv>();
 flagRoutes.use("*", requirePlatform());
 
-export const RELEASE = { version: "1.4.0", name: "Phase 2: payroll, compliance, TDS, claims, payments, reports, billing, platform operations" };
+/** The running version. Keep it the same as package.json and the latest CHANGELOG.md entry (a test checks). */
+export const RELEASE = { version: "1.0.0", name: "First release of the India site" };
 
 flagRoutes.get("/", async (c) => {
   const db = c.get("db");
