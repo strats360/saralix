@@ -68,7 +68,6 @@ export function AdminLayout() {
   });
 
   if (!tenant?.roleId) return <Navigate to={isEmployee ? "/me" : "/login"} replace />;
-  if (!tenant.setupComplete && can("settings", "configure") && !sessionStorageGet("skipSetup") && loc.pathname !== "/setup") return <Navigate to="/setup" replace />;
 
   const groups = ADMIN_NAV.map((g) => ({ ...g, items: g.items.filter((i) => (!i.perm || can(i.perm[0], i.perm[1])) && (!i.feature || has(i.feature))) })).filter((g) => g.items.length);
   const b = badges.data;
@@ -128,13 +127,6 @@ export function AdminLayout() {
   );
 }
 
-function sessionStorageGet(k: string) {
-  try {
-    return sessionStorage.getItem(k);
-  } catch {
-    return null;
-  }
-}
 
 /** Shown while platform support is viewing a company read-only. */
 function SupportBanner({ name, s }: { name: string; s: NonNullable<ReturnType<typeof useSession>["tenant"]>["support"] & object }) {

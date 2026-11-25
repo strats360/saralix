@@ -11,7 +11,11 @@ import {
   roles,
   tenants,
 } from "@hrms/db";
-import { companySignupSchema, onboardingAcceptSchema, sha256Hex } from "@hrms/shared";
+import { accountSignupSchema, onboardingAcceptSchema, randomToken, sha256Hex } from "@hrms/shared";
+import { hashPassword } from "better-auth/crypto";
+import { account, pendingSignups, user } from "@hrms/db";
+import { z } from "zod";
+import { layout } from "../lib/email";
 import type { AppEnv } from "../env";
 import { v } from "../lib/validate";
 import { badRequest, conflict, notFound } from "../lib/errors";
@@ -22,23 +26,67 @@ import { audit } from "../lib/audit";
 
 export const publicRoutes = new Hono<AppEnv>();
 
-/** Self-serve company signup: creates the admin login and the tenant, then signs in. */
-publicRoutes.post("/signup", v("json", companySignupSchema), async (c) => {
+const SIGNUP_LINK_HOURS = 24;
+
+async function sendSignupLink(c: Context<AppEnv>, to: string, name: string, token: string) {
+  const url = `${c.env.APP_URL}/signup/verify?token=${encodeURIComponent(token)}`;
+  const { html, text } = layout({
+    company: "Saralix",
+    heading: "Confirm your email",
+    paragraphs: [`Hi ${name},`, `Confirm this is your work email to finish creating your Saralix account. The link works for ${SIGNUP_LINK_HOURS} hours.`, "If you didn't sign up, ignore this email. No account is created until the link is opened."],
+    cta: { label: "Confirm my email", url },
+  });
+  await c.get("mailer").send({ to, subject: "Confirm your email for Saralix", html, text });
+}
+
+/**
+ * Self-serve sign-up, step 1: a work email and a password. Nothing is created until the email
+ * link is opened; then the person signs in and sets up their company.
+ */
+publicRoutes.post("/signup", v("json", accountSignupSchema), async (c) => {
   const input = c.req.valid("json");
   const db = c.get("db");
-  if (await findUserByEmail(db, input.email)) {
-    throw conflict("An account with this email already exists. Sign in instead.");
+  if (await findUserByEmail(db, input.email)) throw conflict("An account with this email already exists. Sign in instead.");
+  const [recent] = await db.select({ at: pendingSignups.createdAt }).from(pendingSignups).where(and(eq(pendingSignups.email, input.email), isNull(pendingSignups.verifiedAt), gt(pendingSignups.createdAt, new Date(Date.now() - 60_000))));
+  if (recent) throw badRequest("We've just sent you a link. Check your inbox, or try again in a minute.");
+  // a new sign-up replaces any earlier link for the same email
+  await db.delete(pendingSignups).where(and(eq(pendingSignups.email, input.email), isNull(pendingSignups.verifiedAt)));
+  const token = randomToken(32);
+  await db.insert(pendingSignups).values({ id: crypto.randomUUID(), email: input.email, name: input.name, phone: input.phone ?? null, passwordHash: await hashPassword(input.password), tokenHash: await sha256Hex(token), expiresAt: new Date(Date.now() + SIGNUP_LINK_HOURS * 3600_000) });
+  await sendSignupLink(c, input.email, input.name, token);
+  return c.json({ sent: true, email: input.email }, 201);
+});
+
+/** Send the link again. Answers the same whether or not there's a sign-up, so it doesn't reveal accounts. */
+publicRoutes.post("/signup/resend", v("json", z.object({ email: z.string().trim().toLowerCase().email() })), async (c) => {
+  const db = c.get("db");
+  const { email } = c.req.valid("json");
+  const [p] = await db.select().from(pendingSignups).where(and(eq(pendingSignups.email, email), isNull(pendingSignups.verifiedAt)));
+  if (p && Date.now() - p.createdAt.getTime() > 60_000) {
+    const token = randomToken(32);
+    await db.update(pendingSignups).set({ tokenHash: await sha256Hex(token), expiresAt: new Date(Date.now() + SIGNUP_LINK_HOURS * 3600_000), createdAt: new Date() }).where(eq(pendingSignups.id, p.id));
+    await sendSignupLink(c, email, p.name, token);
   }
-  const userId = await upsertLogin(db, { email: input.email, name: input.adminName, password: input.password });
-  const { tenant } = await provisionTenant(db, {
-    name: input.companyName,
-    legalName: input.legalName ?? input.companyName,
-    state: input.state,
-    ownerUserId: userId,
+  return c.json({ sent: true });
+});
+
+/** Step 2: the link from the email. Creates the login, already verified, with the password chosen at sign-up. */
+publicRoutes.post("/signup/verify", v("json", z.object({ token: z.string().min(20).max(200) })), async (c) => {
+  const db = c.get("db");
+  const [p] = await db.select().from(pendingSignups).where(eq(pendingSignups.tokenHash, await sha256Hex(c.req.valid("json").token)));
+  if (!p) throw badRequest("This link isn't valid. Sign up again to get a new one.");
+  if (p.verifiedAt) return c.json({ verified: true, email: p.email });
+  if (p.expiresAt < new Date()) throw badRequest("This link has expired. Sign up again to get a new one.");
+  const existing = await findUserByEmail(db, p.email);
+  await db.transaction(async (tx) => {
+    if (!existing) {
+      const id = crypto.randomUUID();
+      await tx.insert(user).values({ id, email: p.email, name: p.name, emailVerified: true });
+      await tx.insert(account).values({ id: crypto.randomUUID(), accountId: id, providerId: "credential", userId: id, password: p.passwordHash });
+    }
+    await tx.update(pendingSignups).set({ verifiedAt: new Date() }).where(eq(pendingSignups.id, p.id));
   });
-  if (input.phone) await db.update(tenants).set({ contactPhone: input.phone, contactEmail: input.email }).where(eq(tenants.id, tenant.id));
-  await audit(c, { tenantId: tenant.id, action: "tenant.signup", entity: "tenant", entityId: tenant.id, summary: `${input.companyName} signed up` });
-  return signInAndRespond(c, input.email, input.password, { tenantId: tenant.id });
+  return c.json({ verified: true, email: p.email, existing: !!existing });
 });
 
 async function findInvite(c: Context<AppEnv>, token: string) {

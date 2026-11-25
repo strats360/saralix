@@ -44,3 +44,5 @@ export * from "./committees";
 export * from "./maternity";
 export * from "./contract-labour";
 export * from "./dpdp";
+export * from "./work-email";
+export * from "./setup-checklist";

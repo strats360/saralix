@@ -10,6 +10,12 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 - Email through Cloudflare Email Service: set `EMAIL_SERVICE` to `cloudflare` and `EMAIL_FROM` to an address on a domain onboarded there, and deploy. Resend still works when that isn't set. The deploy summary and the health check say which one is in use.
 
+### Changed
+
+- Company sign-up now needs a work email: Gmail, Yahoo, Outlook and other personal or temporary addresses are refused. Employees and invited admins can still use any address.
+- Sign-up is now three short steps: create your account, confirm your email from the link we send (no login exists until then), then sign in and add your company with just its name and state.
+- No more setup wizard blocking the dashboard. A "Get started" card lists the essential steps (company details, PF and ESI, branches and pay cycle, employees, salaries) and the optional ones (other admins, salary bank account, leave policies, holidays, two-factor sign in), each done or pending with a link to it. The full wizard is still there for anyone who prefers it.
+
 ### Fixed
 
 - The health check, control plane and platform console showed version 1.4.0, an old internal number. They now show the release version, and a test keeps it in step with package.json and this changelog.

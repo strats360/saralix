@@ -71,3 +71,20 @@ export async function login(email: string, password = PASSWORD) {
 export function lastEmailTo(to: string) {
   return [...mailer.sent].reverse().find((m) => m.to === to);
 }
+
+/** The full self-serve sign-up: work email, the link from the email, sign in, then the company. */
+export async function signUpCompany(input: { name: string; email: string; password: string; companyName: string; state?: string }) {
+  const anon = new Client();
+  const r = await anon.post("/public/signup", { name: input.name, email: input.email, password: input.password });
+  if (r.status !== 201) throw new Error(`signup failed: ${r.status} ${JSON.stringify(r.body)}`);
+  const mail = lastEmailTo(input.email.toLowerCase());
+  const token = mail?.text.match(/token=([A-Za-z0-9_%-]+)/)?.[1];
+  if (!token) throw new Error("no verification email");
+  const ver = await anon.post("/public/signup/verify", { token: decodeURIComponent(token) });
+  if (ver.status !== 200) throw new Error(`verify failed: ${ver.status} ${JSON.stringify(ver.body)}`);
+  const c = await login(input.email, input.password);
+  const co = await c.post("/me/company", { companyName: input.companyName, state: input.state ?? "Gujarat" });
+  if (co.status !== 201) throw new Error(`company failed: ${co.status} ${JSON.stringify(co.body)}`);
+  c.tenantId = co.body.tenantId;
+  return c;
+}

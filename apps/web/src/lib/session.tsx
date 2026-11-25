@@ -42,8 +42,10 @@ export interface SupportSession {
   expiresAt: string;
 }
 export interface Me {
-  user: { id: string; name: string; email: string; twoFactorEnabled?: boolean };
+  user: { id: string; name: string; email: string; twoFactorEnabled?: boolean; emailVerified?: boolean };
   platformRole: string | null;
+  /** Signed up and verified, with no company yet: goes on to create one. */
+  canCreateCompany?: boolean;
   /** The site this is (platform staff only), e.g. Saralix India. */
   instance?: { key: string; name: string; region: string | null };
   memberships: Membership[];

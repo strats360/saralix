@@ -1,4 +1,5 @@
 import { formulaError } from "./formula";
+import { workEmailError } from "./work-email";
 import { customFieldDefsSchema } from "./custom-fields";
 import { fbpSettingsSchema } from "./fbp";
 import { journalSettingsSchema } from "./journal";
@@ -363,16 +364,29 @@ export const holidaySchema = z.object({
 });
 
 // ---------- onboarding ----------
-export const companySignupSchema = z.object({
-  adminName: trimmed(120).min(2),
-  email: z.string().trim().toLowerCase().email(),
+/** Step 1 of sign-up: the person. The company comes after the email is verified. */
+export const accountSignupSchema = z.object({
+  name: trimmed(120).min(2, "Enter your name"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Enter a valid email")
+    .superRefine((e, ctx) => {
+      const err = workEmailError(e);
+      if (err) ctx.addIssue({ code: z.ZodIssueCode.custom, message: err });
+    }),
   password: z.string().min(10, "Use at least 10 characters").max(128),
   phone: nullable(phoneSchema),
-  role: nullable(trimmed(60)),
-  companySize: nullable(trimmed(30)),
-  companyName: trimmed(160).min(2),
+});
+
+/** Step 2, once signed in with a verified email: the company. */
+export const companyCreateSchema = z.object({
+  companyName: trimmed(160).min(2, "Enter the company name"),
   legalName: nullable(trimmed(200)),
   state: trimmed(60).min(2),
+  role: nullable(trimmed(60)),
+  companySize: nullable(trimmed(30)),
 });
 
 export const companySetupSchema = z.object({

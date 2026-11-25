@@ -1,10 +1,14 @@
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
-import { employees, legalEntities, memberships, platformStaff, roles, tenants } from "@hrms/db";
+import { and, eq, sql } from "drizzle-orm";
+import { employees, legalEntities, memberships, platformStaff, roles, tenants, user } from "@hrms/db";
 import type { AppEnv } from "../env";
+import { v } from "../lib/validate";
+import { badRequest, forbidden } from "../lib/errors";
+import { audit } from "../lib/audit";
+import { provisionTenant } from "../services/provisioning";
 import { loadFlags } from "../services/flags";
 import { activeAccess } from "../services/support";
-import { evaluateFlags, readTwoFactorPolicy, twoFactorRequired } from "@hrms/shared";
+import { companyCreateSchema, evaluateFlags, readTwoFactorPolicy, twoFactorRequired } from "@hrms/shared";
 
 export const meRoutes = new Hono<AppEnv>();
 
@@ -42,6 +46,7 @@ meRoutes.get("/", async (c) => {
     .leftJoin(legalEntities, and(eq(legalEntities.tenantId, tenants.id), eq(legalEntities.isDefault, true)))
     .where(eq(memberships.userId, s.userId));
   const [staff] = await db.select().from(platformStaff).where(eq(platformStaff.userId, s.userId));
+  const [u] = await db.select({ emailVerified: user.emailVerified }).from(user).where(eq(user.id, s.userId));
 
   const flags = await loadFlags(db);
 
@@ -52,7 +57,9 @@ meRoutes.get("/", async (c) => {
   const support = staff?.status === "active" ? await activeAccess(db, s.userId) : [];
   const supportTenants = support.length ? await db.select({ id: tenants.id, name: tenants.name, code: tenants.code, status: tenants.status, plan: tenants.plan }).from(tenants) : [];
   return c.json({
-    user: { id: s.userId, name: s.name, email: s.email, twoFactorEnabled: s.twoFactorEnabled },
+    user: { id: s.userId, name: s.name, email: s.email, twoFactorEnabled: s.twoFactorEnabled, emailVerified: !!u?.emailVerified },
+    // a verified sign-up with no company yet goes on to create one
+    canCreateCompany: !!u?.emailVerified && !rows.length && staff?.status !== "active",
     supportSessions: support.map((a) => {
       const t = supportTenants.find((x) => x.id === a.access.tenantId)!;
       return { tenantId: t.id, tenantName: t.name, tenantCode: t.code, tenantStatus: t.status, plan: t.plan, features: evaluateFlags(flags, { id: t.id, plan: t.plan }), ticketId: a.access.ticketId, ticketNumber: a.number, accessId: a.access.id, expiresAt: a.access.expiresAt };
@@ -82,4 +89,25 @@ meRoutes.get("/", async (c) => {
         twoFactorRequired: twoFactorRequired(readTwoFactorPolicy(r.settings), !!r.roleId),
       })),
   });
+});
+
+/**
+ * Sign-up, step 3: a signed-in person with a verified email and no company creates theirs and
+ * becomes its super admin. Everything else is set up later from the dashboard checklist.
+ */
+meRoutes.post("/company", v("json", companyCreateSchema), async (c) => {
+  const s = c.get("session")!;
+  const db = c.get("db");
+  const b = c.req.valid("json");
+  const [u] = await db.select({ emailVerified: user.emailVerified }).from(user).where(eq(user.id, s.userId));
+  if (!u?.emailVerified) throw forbidden("Confirm your email first. Check your inbox for the link.");
+  const [existing] = await db.select({ id: memberships.id }).from(memberships).where(eq(memberships.userId, s.userId)).limit(1);
+  if (existing) throw badRequest("You already belong to a company. Ask its admin, or contact Saralix support to add another.");
+  const { tenant } = await provisionTenant(db, { name: b.companyName, legalName: b.legalName ?? b.companyName, state: b.state, ownerUserId: s.userId });
+  await db
+    .update(tenants)
+    .set({ contactEmail: s.email, settings: sql`${tenants.settings} || ${JSON.stringify({ signup: { role: b.role ?? null, companySize: b.companySize ?? null } })}::jsonb` })
+    .where(eq(tenants.id, tenant.id));
+  await audit(c, { tenantId: tenant.id, action: "tenant.signup", entity: "tenant", entityId: tenant.id, summary: `${b.companyName} signed up` });
+  return c.json({ tenantId: tenant.id }, 201);
 });

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import postgres from "postgres";
-import { Client, env, login } from "./helpers";
+import { Client, env, login, signUpCompany } from "./helpers";
 
 const sql = postgres(env.DATABASE_URL!, { max: 1, onnotice: () => {} });
 let priya: Client, nisha: Client, hardik: Client, other: Client;
@@ -20,10 +20,8 @@ const form = (bytes: Uint8Array, type = "image/png", name = "me.png") => {
 beforeAll(async () => {
   [priya, nisha, hardik] = await Promise.all([login("priya.vaghela@strats360.com"), login("nisha.trivedi@strats360.com"), login("hardik.mehta@strats360.com")]);
   // someone from a different company
-  other = new Client();
   otherEmail = `photo-${Date.now()}@example.com`;
-  const su = await other.post("/public/signup", { adminName: "Photo Test", email: otherEmail, password: "PhotoTest#2026", companyName: "Photo Test Pvt Ltd", state: "Gujarat" });
-  expect(su.status).toBeLessThan(300);
+  other = await signUpCompany({ name: "Photo Test", email: otherEmail, password: "PhotoTest#2026", companyName: "Photo Test Pvt Ltd" });
   [{ id: priyaId }] = (await sql`select id from employees where work_email = 'priya.vaghela@strats360.com'`) as any;
   [{ id: raviId }] = (await sql`select id from employees where employee_code = 'STL-0057'`) as any;
 });

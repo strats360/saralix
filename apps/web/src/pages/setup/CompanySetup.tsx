@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useSearchParams, Link, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, Plus, Upload, Mail } from "lucide-react";
@@ -62,9 +62,12 @@ export default function CompanySetup() {
   const tq = useQuery({ queryKey: ["tenant"], queryFn: () => api.get<Tenant>("/admin/org/tenant"), enabled: !!membership?.roleId });
   const [step, setStep] = useState(1); // 1..5 => design steps 2..6
 
+  // the dashboard checklist links straight to a step (?step=2); otherwise carry on where they left off
+  const [params] = useSearchParams();
   useEffect(() => {
     if (tq.data) {
-      const s = Number(tq.data.setupStep);
+      const asked = Number(params.get("step"));
+      const s = asked >= 1 && asked <= 5 ? asked : Number(tq.data.setupStep);
       if (s >= 1 && s <= 5) setStep(s);
     }
   }, [tq.data?.id]); // eslint-disable-line react-hooks/exhaustive-deps

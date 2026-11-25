@@ -56,7 +56,7 @@ export default function Login() {
       }
       await done();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) setError("That email and password don't match. Check them and try again.");
+      if (err instanceof ApiError && err.status === 401) setError("That email and password don't match. Check them and try again. Just signed up? Open the link we emailed you first.");
       else if (err instanceof ApiError && err.status === 429) setError("Too many attempts. Wait a minute and try again.");
       else setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {

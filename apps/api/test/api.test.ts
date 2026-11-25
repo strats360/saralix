@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll } from "vitest";
-import { Client, lastEmailTo, login } from "./helpers";
+import { Client, lastEmailTo, login, signUpCompany } from "./helpers";
 import { todayLocal } from "@hrms/shared";
 
 let hr: Client, kunal: Client, priya: Client, hardik: Client, platform: Client;
@@ -240,9 +240,7 @@ describe("attendance", () => {
 
 describe("tenant isolation", () => {
   it("a second company cannot see the first company's data", async () => {
-    const c = new Client();
-    const r = await c.post("/public/signup", { adminName: "Other Admin", email: "admin@othercorp.in", password: "OtherCorp#2026", companyName: "Other Corp Pvt Ltd", state: "Maharashtra" });
-    expect(r.status).toBe(200);
+    const c = await signUpCompany({ name: "Other Admin", email: "admin@othercorp.in", password: "OtherCorp#2026", companyName: "Other Corp Pvt Ltd", state: "Maharashtra" });
     const list = await c.get("/admin/employees");
     expect(list.body.total).toBe(0);
     const priyaId = (await hr.get("/admin/employees?q=STL-0042")).body.rows[0].id;

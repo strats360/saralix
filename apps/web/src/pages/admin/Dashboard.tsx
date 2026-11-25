@@ -1,3 +1,4 @@
+import { SetupChecklist } from "@/components/setup/SetupChecklist";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -71,6 +72,7 @@ export default function DashboardPage() {
           </>
         }
       />
+      <SetupChecklist />
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
         <StatCard label="Total employees" value={d.employees.active} meta={`${d.employees.probation} on probation · ${d.employees.inactive} inactive`} onClick={can("employees") ? () => nav("/employees") : undefined} />
         {a ? (

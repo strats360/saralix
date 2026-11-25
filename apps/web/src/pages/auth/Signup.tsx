@@ -1,46 +1,55 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { companySignupSchema, INDIAN_STATES } from "@hrms/shared";
-import { api, setActiveTenant } from "@/lib/api";
+import { Link } from "react-router";
+import { useMutation } from "@tanstack/react-query";
+import { MailCheck } from "lucide-react";
+import { accountSignupSchema, workEmailError } from "@hrms/shared";
+import { api, errorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Input } from "@/components/ui/field";
 import { Notice } from "@/components/ui/page";
-import { COMPANY_STEPS, StepRail, WizardFrame } from "@/components/onboarding/PublicShell";
+import { StepRail, WizardFrame } from "@/components/onboarding/PublicShell";
 import { apiFieldErrors, zodErrors } from "@/components/onboarding/form";
 
-const EMPTY = { adminName: "", email: "", phone: "", password: "", role: "HR head", companySize: "21–100", companyName: "", legalName: "", state: "Gujarat" };
+const EMPTY = { name: "", email: "", phone: "", password: "" };
 
-/** Company self-signup: step 1 of the company onboarding wizard. */
+/** The three steps of signing up, shown on the left. */
+export const SIGNUP_STEPS = [
+  { label: "Create your account", hint: "Work email and password" },
+  { label: "Confirm your email", hint: "Open the link we send" },
+  { label: "Add your company", hint: "Name and state; the rest later" },
+];
+
+/** Company sign-up, step 1: the person, with a work email. The company comes after the email is confirmed. */
 export default function Signup() {
-  const nav = useNavigate();
-  const qc = useQueryClient();
   const [f, setF] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
-  const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) => setF((s) => ({ ...s, [k]: e.target.value }));
 
   const signup = useMutation({
-    mutationFn: (body: unknown) => api.post<{ tenantId: string }>("/public/signup", body),
+    mutationFn: (body: unknown) => api.post<{ email: string }>("/public/signup", body),
     meta: { silent: true },
-    onSuccess: async (r) => {
-      setActiveTenant(r.tenantId);
-      await qc.invalidateQueries({ queryKey: ["me"] });
-      nav("/setup", { replace: true });
-    },
+    onSuccess: (r) => setSentTo(r.email),
     onError: (e) => {
       setErrors(apiFieldErrors(e));
       setFormErr(e instanceof Error ? e.message : "Sign up failed");
     },
   });
+  const resend = useMutation({ mutationFn: () => api.post("/public/signup/resend", { email: sentTo }), meta: { silent: true } });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormErr(null);
-    const parsed = companySignupSchema.safeParse({ ...f, legalName: f.legalName || f.companyName });
+    const parsed = accountSignupSchema.safeParse({ ...f, phone: f.phone || null });
     if (!parsed.success) return setErrors(zodErrors(parsed.error));
     setErrors({});
     signup.mutate(parsed.data);
+  };
+  // say it as soon as they leave the field, not only on submit
+  const checkEmail = () => {
+    const err = f.email.includes("@") ? workEmailError(f.email) : null;
+    setErrors((x) => ({ ...x, email: err ?? "" }));
   };
 
   return (
@@ -48,65 +57,62 @@ export default function Signup() {
       rail={
         <>
           <div>
-            <div className="text-[22px] font-medium tracking-[-0.01em]">Set up your company</div>
-            <div className="text-muted text-[13px]">About 10 minutes. You can save and come back.</div>
+            <div className="text-[22px] font-medium tracking-[-0.01em]">Start with Saralix</div>
+            <div className="text-muted text-[13px]">Two minutes to get in. Set up the rest from your dashboard, at your own pace.</div>
           </div>
-          <StepRail steps={COMPANY_STEPS.map((s, i) => ({ ...s, state: i === 0 ? "current" : "todo" }))} />
+          <StepRail steps={SIGNUP_STEPS.map((s, i) => ({ ...s, state: sentTo ? (i === 0 ? "done" : i === 1 ? "current" : "todo") : i === 0 ? "current" : "todo" }))} />
         </>
       }
       footnote="30-day trial · no card needed · data stored in India"
     >
-      <div>
-        <div className="card-kicker">Step 1 of 6</div>
-        <div className="text-[26px] font-medium tracking-[-0.015em]">Account</div>
-      </div>
-      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Your name" error={errors.adminName}>
-            <Input value={f.adminName} onChange={set("adminName")} autoComplete="name" invalid={!!errors.adminName} />
-          </Field>
-          <Field label="Work email" error={errors.email}>
-            <Input type="email" value={f.email} onChange={set("email")} autoComplete="email" invalid={!!errors.email} />
-          </Field>
-          <Field label="Mobile" error={errors.phone}>
-            <Input type="tel" value={f.phone} onChange={set("phone")} placeholder="+91 98240 11872" autoComplete="tel" invalid={!!errors.phone} />
-          </Field>
-          <Field label="Password" error={errors.password} hint="At least 10 characters">
-            <Input type="password" value={f.password} onChange={set("password")} autoComplete="new-password" invalid={!!errors.password} />
-          </Field>
-          <Field label="Your role">
-            <Select value={f.role} onChange={set("role")}>
-              {["HR head", "Founder / director", "Finance / accounts", "Payroll consultant (CA)"].map((r) => <option key={r}>{r}</option>)}
-            </Select>
-          </Field>
-          <Field label="Company size">
-            <Select value={f.companySize} onChange={set("companySize")}>
-              {["1–20", "21–100", "101–500", "500+"].map((r) => <option key={r}>{r}</option>)}
-            </Select>
-          </Field>
-          <Field label="Company name" error={errors.companyName}>
-            <Input value={f.companyName} onChange={set("companyName")} autoComplete="organization" invalid={!!errors.companyName} />
-          </Field>
-          <Field label="Legal name" hint="As on your GST or PAN. Leave blank if same." error={errors.legalName}>
-            <Input value={f.legalName} onChange={set("legalName")} />
-          </Field>
-          <Field label="State of registered office" error={errors.state}>
-            <Select value={f.state} onChange={set("state")}>
-              {INDIAN_STATES.map((s) => <option key={s}>{s}</option>)}
-            </Select>
-          </Field>
-        </div>
-        {formErr ? <Notice tone="bad">{formErr}</Notice> : null}
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-divider)] pt-3">
-          <div className="text-muted text-[13px]">
-            Already have an account? <Link to="/login">Sign in</Link>
+      {sentTo ? (
+        <div className="flex flex-col gap-4">
+          <MailCheck size={32} className="text-[var(--color-accent)]" />
+          <div className="text-[26px] font-medium tracking-[-0.015em]">Check your email</div>
+          <p className="!m-0 text-[14.5px]">
+            We sent a link to <b className="font-semibold">{sentTo}</b>. Open it to confirm your email, then sign in and add your company. The link works for 24 hours.
+          </p>
+          <div className="text-muted text-[13px]">Nothing there after a few minutes? Check spam, or send it again.</div>
+          <div className="flex flex-wrap gap-2">
+            <Button loading={resend.isPending} disabled={resend.isSuccess} onClick={() => resend.mutate()}>{resend.isSuccess ? "Sent again" : "Send the link again"}</Button>
+            <Button variant="ghost" onClick={() => { setSentTo(null); resend.reset(); }}>Use a different email</Button>
           </div>
-          <Button type="submit" variant="primary" loading={signup.isPending}>
-            Create account & continue
-          </Button>
+          {resend.error ? <Notice tone="bad">{errorMessage(resend.error)}</Notice> : null}
         </div>
-        <div className="text-muted text-[12px]">By continuing you agree to the terms of service and privacy policy. Your data is processed under the DPDP Act, 2023.</div>
-      </form>
+      ) : (
+        <>
+          <div>
+            <div className="card-kicker">Step 1 of 3</div>
+            <div className="text-[26px] font-medium tracking-[-0.015em]">Create your account</div>
+          </div>
+          <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Your name" error={errors.name}>
+                <Input value={f.name} onChange={set("name")} autoComplete="name" invalid={!!errors.name} />
+              </Field>
+              <Field label="Work email" error={errors.email} hint={errors.email ? undefined : "Your company address, not Gmail or Yahoo"}>
+                <Input type="email" value={f.email} onChange={set("email")} onBlur={checkEmail} autoComplete="email" placeholder="you@yourcompany.com" invalid={!!errors.email} />
+              </Field>
+              <Field label="Mobile" error={errors.phone}>
+                <Input type="tel" value={f.phone} onChange={set("phone")} placeholder="+91 98240 11872" autoComplete="tel" invalid={!!errors.phone} />
+              </Field>
+              <Field label="Password" error={errors.password} hint="At least 10 characters">
+                <Input type="password" value={f.password} onChange={set("password")} autoComplete="new-password" invalid={!!errors.password} />
+              </Field>
+            </div>
+            {formErr ? <Notice tone="bad">{formErr}</Notice> : null}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-divider)] pt-3">
+              <div className="text-muted text-[13px]">
+                Already have an account? <Link to="/login">Sign in</Link>
+              </div>
+              <Button type="submit" variant="primary" loading={signup.isPending}>
+                Create account
+              </Button>
+            </div>
+            <div className="text-muted text-[12px]">By continuing you agree to the terms of service and privacy policy. Your data is processed under the DPDP Act, 2023.</div>
+          </form>
+        </>
+      )}
     </WizardFrame>
   );
 }

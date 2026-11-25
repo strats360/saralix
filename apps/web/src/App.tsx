@@ -32,6 +32,7 @@ function Home() {
   if (tenant?.roleId) return <AdminLayout />;
   if (tenant?.employeeId) return <Navigate to="/me" replace />;
   if (me?.platformRole) return <Navigate to="/platform" replace />;
+  if (me?.canCreateCompany) return <Navigate to="/get-started" replace />;
   return <Navigate to="/no-access" replace />;
 }
 
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
   { path: "/forgot-password", element: L(() => import("@/pages/auth/ForgotPassword")) },
   { path: "/reset-password", element: L(() => import("@/pages/auth/ResetPassword")) },
   { path: "/signup", element: L(() => import("@/pages/auth/Signup")) },
+  { path: "/signup/verify", element: L(() => import("@/pages/auth/VerifyEmail")) },
   { path: "/onboarding/:token", element: L(() => import("@/pages/auth/InviteAccept")) },
   { path: "/careers/:slug", element: L(() => import("@/pages/careers/Careers")) },
   { path: "/careers/:slug/jobs/:id", element: L(() => import("@/pages/careers/Careers").then((m) => ({ default: m.CareersJob }))) },
@@ -53,6 +55,7 @@ const router = createBrowserRouter([
       { path: "/no-access", element: L(() => import("@/pages/auth/NoAccess")) },
       { path: "/account/security", element: L(() => import("@/pages/account/Security")) },
       { path: "/setup", element: L(() => import("@/pages/setup/CompanySetup")) },
+      { path: "/get-started", element: L(() => import("@/pages/auth/CreateCompany")) },
       { path: "/me/onboarding", element: L(() => import("@/pages/ess/Onboarding")) },
       {
         path: "/me",

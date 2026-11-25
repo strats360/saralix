@@ -2,7 +2,7 @@
  * Better Auth core tables. Column names must match what Better Auth expects
  * (camelCase field keys); table names are mapped in the adapter config.
  */
-import { bigint, boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const user = pgTable("auth_user", {
   id: text("id").primaryKey(),
@@ -92,4 +92,25 @@ export const twoFactor = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("auth_two_factor_user_idx").on(t.userId), index("auth_two_factor_secret_idx").on(t.secret)],
+);
+
+/**
+ * A company sign-up waiting for its email to be verified. The login is only created when the
+ * link in the email is opened, with the password chosen here, so nobody can claim an address
+ * they don't control.
+ */
+export const pendingSignups = pgTable(
+  "pending_signups",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    passwordHash: text("password_hash").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("pending_signups_token_uq").on(t.tokenHash), index("pending_signups_email_idx").on(t.email)],
 );
