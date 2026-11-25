@@ -2,6 +2,8 @@
 @import "tailwindcss";
 /* Layered so Tailwind utilities (incl. responsive hidden/lg:flex) can override component classes. */
 @import "./nocturne.css" layer(components);
+/* The Saralix colours, both modes: the one place colours are defined. */
+@import "./theme.css";
 
 /* Make Tailwind aware of the design tokens (bg-surface, text-muted, etc.). */
 @theme inline {
@@ -16,53 +18,41 @@
   --radius-lg: var(--radius-lg);
 }
 
-/* Theme layer from the HRMS v2 design: selection, tints, status colours, and the derived light theme. */
-[data-theme] {
-  --sel-bg: color-mix(in srgb, var(--color-accent) 18%, transparent);
-  --sel-fg: var(--color-accent-300);
-  --tint-1: color-mix(in srgb, var(--color-text) 6%, transparent);
-  --tint-2: color-mix(in srgb, var(--color-text) 14%, transparent);
-  --muted: color-mix(in srgb, var(--color-text) 60%, transparent);
-  --muted-2: color-mix(in srgb, var(--color-text) 75%, transparent);
-  --inverse-bg: var(--color-neutral-200);
-  --inverse-fg: var(--color-neutral-900);
-  --ok: oklch(0.72 0.11 150);
-  --ok-bg: oklch(0.34 0.05 150);
-  --ok-fg: oklch(0.88 0.09 150);
-  --warn: oklch(0.8 0.12 80);
-  --warn-bg: oklch(0.36 0.06 70);
-  --warn-fg: oklch(0.9 0.1 80);
-  --bad: oklch(0.7 0.14 25);
-  --bad-bg: oklch(0.34 0.07 25);
-  --bad-fg: oklch(0.88 0.08 25);
-  color-scheme: dark;
+/* Component colours from the theme tokens (theme.css). Unlayered, so they win over nocturne.css. */
+.card { border: 1px solid var(--color-border); }
+.card-kicker { color: var(--color-muted); }
+.card-meta, figcaption, .field > label { color: var(--color-muted); }
+.btn-primary { color: var(--color-primary-fg); background: var(--color-primary-bg); border-color: var(--color-primary-bg); }
+.btn-primary:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+.btn-primary:active { background: var(--color-primary-hover); }
+.btn-secondary { color: var(--color-text); border-color: var(--color-neutral-400); }
+[data-theme="dark"] .btn-secondary { border-color: var(--color-control-border); }
+.btn-secondary:hover { background: var(--tint-1); }
+.btn-secondary:active { background: var(--tint-2); }
+/* a ghost button with words is a link: accent, underlined on hover; one with only an icon stays neutral */
+.btn-ghost { color: var(--color-accent); }
+.btn-ghost:hover { color: var(--color-accent-hover); background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+.btn-ghost:active { background: transparent; }
+.btn-ghost.btn-ghost-icon { color: var(--color-text); }
+.btn-ghost.btn-ghost-icon:hover { color: var(--color-text); background: var(--tint-1); text-decoration: none; }
+.btn-ghost.btn-ghost-icon:active { background: var(--tint-2); }
+.btn:not(.btn-ghost):hover, .btn-ghost-icon:hover { text-decoration: none; }
+.input { border-color: var(--color-control-border); }
+.input:hover { border-color: var(--color-text); }
+.input:focus-visible { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+.radio .dot { border-color: var(--color-control-border); }
+.tag-accent, [data-theme="light"] .tag-accent { background: var(--color-accent-tint); color: var(--color-accent); }
+.tag-neutral, [data-theme="light"] .tag-neutral { background: var(--tint-2); color: var(--color-text); }
+.tag-outline { border-color: var(--color-accent); color: var(--color-accent); }
+.dialog-backdrop { background: rgba(17, 17, 17, 0.45); }
+.table th { color: var(--color-muted); }
+::selection { background: color-mix(in srgb, var(--color-accent) 25%, transparent); }
+
+/* Links: the accent, underlined on hover. In the components layer so utility classes (no-underline, colours) still win. */
+@layer components {
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { color: var(--color-accent-hover); text-decoration: underline; text-underline-offset: 3px; }
 }
-[data-theme="light"] {
-  --color-bg: color-mix(in srgb, var(--color-neutral-100) 55%, var(--color-neutral-200));
-  --color-surface: var(--color-neutral-100);
-  --color-text: var(--color-neutral-900);
-  --color-divider: color-mix(in srgb, #292b31 14%, transparent);
-  --shadow-sm: 0 0 0 1px color-mix(in srgb, #292b31 10%, transparent);
-  --shadow-md: 0 0 0 1px color-mix(in srgb, #292b31 10%, transparent), 0 6px 18px rgba(41, 43, 49, 0.12);
-  --shadow-lg: 0 0 0 1px color-mix(in srgb, #292b31 12%, transparent), 0 16px 40px rgba(41, 43, 49, 0.18);
-  --sel-fg: var(--color-accent-700);
-  --inverse-bg: var(--color-neutral-900);
-  --inverse-fg: var(--color-neutral-100);
-  --ok: oklch(0.55 0.12 150);
-  --ok-bg: oklch(0.93 0.05 150);
-  --ok-fg: oklch(0.36 0.1 150);
-  --warn: oklch(0.65 0.13 70);
-  --warn-bg: oklch(0.94 0.06 80);
-  --warn-fg: oklch(0.42 0.1 70);
-  --bad: oklch(0.58 0.16 25);
-  --bad-bg: oklch(0.93 0.05 25);
-  --bad-fg: oklch(0.4 0.12 25);
-  color-scheme: light;
-}
-[data-theme="light"] .tag-accent { background: var(--sel-bg); color: var(--color-accent-700); }
-[data-theme="light"] .tag-neutral { background: var(--tint-2); color: var(--color-neutral-900); }
-[data-theme="light"] .dialog-backdrop { background: color-mix(in srgb, var(--color-neutral-900) 35%, transparent); }
-[data-theme="light"] .btn-primary { color: var(--color-accent-700); border-color: var(--color-accent-600); }
 
 html, body, #root { min-height: 100%; }
 body { font-size: 14px; }
@@ -74,9 +64,7 @@ button { font-family: inherit; }
 .tag-bad { background: var(--bad-bg); color: var(--bad-fg); }
 .table th { white-space: nowrap; }
 .text-muted { color: var(--muted); }
-a { color: var(--color-accent); }
-a:hover { color: var(--sel-fg); }
-select.input { appearance: none; padding-inline-end: 30px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239397ab' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+select.input { appearance: none; padding-inline-end: 30px; background-image: var(--select-arrow); background-repeat: no-repeat; background-position: right 10px center; }
 [dir="rtl"] select.input { background-position: left 10px center; }
 .input[aria-invalid="true"] { border-color: var(--bad); }
 .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--tint-2) transparent; }
@@ -85,7 +73,7 @@ select.input { appearance: none; padding-inline-end: 30px; background-image: url
 /* checkbox styled like the design's square radio */
 .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; position: relative; }
 .check input { position: absolute; opacity: 0; width: 0; height: 0; }
-.check .box { width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid var(--color-divider); display: grid; place-items: center; }
+.check .box { width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid var(--color-control-border); display: grid; place-items: center; }
 .check:hover .box { border-color: var(--color-accent); }
 .check input:checked + .box { border-color: var(--color-accent); background: var(--color-accent); }
 .check input:checked + .box::after { content: ""; width: 8px; height: 4px; border-left: 2px solid var(--color-bg); border-bottom: 2px solid var(--color-bg); transform: rotate(-45deg) translate(1px, -1px); }
@@ -106,8 +94,8 @@ select.input { appearance: none; padding-inline-end: 30px; background-image: url
   #payslip-print, #payslip-print *, #invoice-print, #invoice-print *, #letter-print, #letter-print * { visibility: visible !important; }
   #payslip-print, #invoice-print, #letter-print {
     position: absolute; left: 0; top: 0; width: 100%;
-    --color-text: #1d1e26; --color-divider: #d9dbe3; --tint-1: #f3f4f8; --ok-bg: #e8f5ec; --ok-fg: #1e5b33; --muted: #5d6070; --color-accent: #5d5294;
-    color: #1d1e26;
+    --color-text: #111111; --color-divider: #e4e4dc; --color-border: #e4e4dc; --tint-1: #efefe9; --ok-bg: #e6f2ec; --ok-fg: #0f7a55; --muted: #6b6b63; --color-muted: #6b6b63; --color-accent: #0f7a55;
+    color: #111111;
   }
   .dialog { box-shadow: none !important; background: #fff !important; }
   /* Undo the dialog's fixed centring and height cap so the slip prints whole on A4. */

@@ -4,6 +4,7 @@ import { NavLink } from "react-router";
 import { ChevronDown, PanelLeftClose, PanelLeftOpen, Smartphone, LayoutDashboard } from "lucide-react";
 import type { NavGroup } from "./nav";
 import { cn } from "@/lib/utils";
+import { SaralixTile } from "@/components/brand/Logo";
 
 function loadGroups(): Record<string, boolean> {
   try {
@@ -16,9 +17,7 @@ function loadGroups(): Record<string, boolean> {
 export function Brand({ collapsed, subtitle }: { collapsed?: boolean; subtitle?: string }) {
   return (
     <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
-      <div className="grid h-[34px] w-[34px] flex-none place-items-center rounded-[var(--radius-md)] text-[17px] font-semibold" style={{ background: "var(--color-accent)", color: "var(--color-bg)" }}>
-        S
-      </div>
+      <SaralixTile size={34} />
       {!collapsed ? (
         <div className="min-w-0 leading-tight">
           <div className="whitespace-nowrap text-[17px] font-medium">Saralix</div>

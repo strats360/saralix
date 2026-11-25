@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ThemeToggle } from "@/components/layout/Header";
+import { SaralixTile } from "@/components/brand/Logo";
 
 /** Split-screen frame for sign-in pages (left brand panel from the design). */
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -7,9 +8,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
       <div className="hidden flex-col justify-between p-12 lg:flex" style={{ background: "var(--color-section)", color: "var(--color-neutral-100)" }}>
         <div className="flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-[var(--radius-md)] text-[20px] font-semibold" style={{ background: "var(--color-accent)", color: "#161826" }}>
-            S
-          </div>
+          <SaralixTile size={40} inverse />
           <div className="text-[22px] font-medium">Saralix</div>
         </div>
         <div className="max-w-[520px]">

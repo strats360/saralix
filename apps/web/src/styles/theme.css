@@ -1,0 +1,119 @@
+/*
+ * Saralix theme: the colours of saralix.com, for both modes, in one place.
+ *
+ * Every colour in the app comes from these tokens. nocturne.css (the component classes) and
+ * app.css read them; components use var(--…) and never hard-code a colour. The marketing site's
+ * own theme isn't shared with this repo, so the values are copied from it here.
+ *
+ * Rules: the accent is for small highlights only (links, the active nav item, focus, checks,
+ * progress); primary buttons are black (off-white in dark mode). Amber is only for warnings and
+ * red only for errors and overdue items. Every text and control pair meets WCAG AA; the ratios
+ * are noted next to the values.
+ */
+
+/* ── Dark (the default when nothing is saved) ─────────────────────────────── */
+:root,
+[data-theme],
+[data-theme="dark"] {
+  --color-bg: #111111;
+  --color-surface: #1a1a1a;
+  --color-border: #2a2a2a; /* card and panel edges */
+  --color-control-border: #6a6a64; /* inputs, checkboxes, toggles: 3.2:1 on surface */
+  --color-text: #f6f6f1; /* 17.4:1 on bg */
+  --color-muted: #a3a39c; /* 7.4:1 on bg, 6.9:1 on surface */
+  --color-accent: #34b584; /* 6.7:1 on surface */
+  --color-accent-hover: #4cc797;
+  --color-accent-tint: #12301f; /* accent text on it: 5.5:1 */
+  --color-primary-bg: #f6f6f1; /* primary buttons: off-white with black text, 17.4:1 */
+  --color-primary-fg: #111111;
+  --color-primary-hover: #e4e4dc;
+
+  --color-divider: var(--color-border);
+  --muted: var(--color-muted);
+  --muted-2: #d0d0c9;
+  --tint-1: #1f1f1f; /* hover fills */
+  --tint-2: #2a2a2a; /* quiet fills: empty bars, neutral tags */
+  --sel-bg: var(--color-accent-tint);
+  --sel-fg: var(--color-accent);
+  --inverse-bg: #f6f6f1;
+  --inverse-fg: #111111;
+
+  /* status: ok is the accent; amber only for warnings, red only for errors and overdue */
+  --ok: var(--color-accent);
+  --ok-bg: var(--color-accent-tint);
+  --ok-fg: var(--color-accent);
+  --warn: #f2a93b; /* 8.7:1 on surface */
+  --warn-bg: #33250d;
+  --warn-fg: #f6c878; /* 9.5:1 on warn-bg */
+  --bad: #f2776b; /* 6.3:1 on surface */
+  --bad-bg: #3a1613;
+  --bad-fg: #f8a79d; /* 8.4:1 on bad-bg */
+
+  /* ramps the component classes still reference: warm greys and the brand green, no purple */
+  --color-neutral-100: #f6f6f1;
+  --color-neutral-200: #ecece5;
+  --color-neutral-300: #e4e4dc;
+  --color-neutral-400: #c9c9c0;
+  --color-neutral-500: #a3a39c;
+  --color-neutral-600: #8e8e85;
+  --color-neutral-700: #6b6b63;
+  --color-neutral-800: #2a2a2a;
+  --color-neutral-900: #111111;
+  --color-accent-100: #e6f2ec;
+  --color-accent-200: #cbe7d9;
+  --color-accent-300: #9ed6bc;
+  --color-accent-400: #4cc797;
+  --color-accent-500: #34b584;
+  --color-accent-600: #14966a;
+  --color-accent-700: #0f7a55;
+  --color-accent-800: #0c6346;
+  --color-accent-900: #12301f;
+  --color-accent-2: var(--color-accent);
+  --color-section: #1a1a1a; /* the sign-in page's side panel */
+  --color-section-glow: #2a2a2a;
+  --color-section-ghost: #6b6b63;
+
+  --shadow-sm: 0 0 0 1px var(--color-border);
+  --shadow-md: 0 0 0 1px var(--color-border), 0 6px 18px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 0 0 1px #3a3a3a, 0 16px 40px rgba(0, 0, 0, 0.6);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3a39c' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+/* ── Light ─────────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --color-bg: #f6f6f1; /* page, sidebar, top bar */
+  --color-surface: #ffffff; /* cards, inputs, search */
+  --color-border: #e4e4dc;
+  --color-control-border: #8e8e85; /* 3.3:1 on surface, 3.05:1 on bg */
+  --color-text: #111111; /* 17.4:1 on bg */
+  --color-muted: #6b6b63; /* 5.0:1 on bg, 5.4:1 on surface */
+  --color-accent: #0f7a55; /* 4.9:1 on bg, 5.3:1 on surface */
+  --color-accent-hover: #0c6346;
+  --color-accent-tint: #e6f2ec; /* accent text on it: 4.6:1 */
+  --color-primary-bg: #111111; /* primary buttons: black with white text, 18.9:1 */
+  --color-primary-fg: #ffffff;
+  --color-primary-hover: #2b2b2b;
+
+  --muted-2: #3f3f3a;
+  --tint-1: #efefe9;
+  --tint-2: #e4e4dc;
+  --inverse-bg: #111111;
+  --inverse-fg: #f6f6f1;
+
+  --warn: #b45309; /* 5.0:1 on surface */
+  --warn-bg: #fdf1de;
+  --warn-fg: #8a4508; /* 6.4:1 on warn-bg */
+  --bad: #b42318; /* 6.6:1 on surface */
+  --bad-bg: #fcebe9;
+  --bad-fg: #912018; /* 7.5:1 on bad-bg */
+
+  --color-section: #111111;
+  --color-section-glow: #2a2a2a;
+
+  --shadow-sm: 0 0 0 1px var(--color-border);
+  --shadow-md: 0 0 0 1px var(--color-border), 0 6px 18px rgba(17, 17, 17, 0.08);
+  --shadow-lg: 0 0 0 1px var(--color-border), 0 16px 40px rgba(17, 17, 17, 0.14);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b63' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  color-scheme: light;
+}

@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
 import { ThemeToggle } from "@/components/layout/Header";
+import { SaralixTile } from "@/components/brand/Logo";
 
 /** Brand mark used on public and full-page screens. */
 export function BrandMark({ size = 34, name = "Saralix" }: { size?: number; name?: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="grid flex-none place-items-center rounded-[var(--radius-md)] font-semibold" style={{ width: size, height: size, background: "var(--color-accent)", color: "var(--color-bg)", fontSize: size * 0.45 }}>
-        {name.charAt(0)}
-      </div>
+      <SaralixTile size={size} />
       <div className="text-[17px] font-medium">{name}</div>
     </div>
   );

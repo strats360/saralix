@@ -45,7 +45,7 @@ interface RosterRes {
 }
 
 // one colour per shift, light and dark friendly (tints over the surface)
-const TONES = ["#5d8bf4", "#e39b3b", "#9b6ee0", "#3fae7a", "#e0607e", "#3fb3c9", "#b58a3a"];
+const TONES = ["#5d8bf4", "#e39b3b", "#8a9a3a", "#3fae7a", "#e0607e", "#3fb3c9", "#b58a3a"];
 const plus = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const monday = (iso: string) => {
   const d = new Date(`${iso}T00:00:00Z`);

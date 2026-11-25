@@ -136,7 +136,7 @@ export default function DashboardPage() {
         ) : null}
 
         <Card className="!gap-3">
-          <CardHeader title="Needs attention" icon={<AlertTriangle size={18} style={{ color: "var(--color-accent)" }} />} />
+          <CardHeader title="Needs attention" icon={<AlertTriangle size={18} style={{ color: "var(--warn)" }} />} />
           <div className="flex flex-col gap-2.5 text-[13.5px]">
             <AttentionRow to="/attendance/corrections" title="Attendance corrections" sub="Missed punches and WFH requests" count={d.pendingCorrections} show={can("attendance")} />
             <AttentionRow to="/employees/onboarding" title="Onboarding to verify" sub="New joiners who submitted their details" count={d.awaitingVerification} show={can("employees")} />

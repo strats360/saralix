@@ -34,7 +34,7 @@ export function PayrollCard() {
       </div>
       <div className="grid grid-cols-7 gap-1" aria-hidden>
         {Array.from({ length: 7 }, (_, i) => (
-          <div key={i} className="h-2 rounded-[var(--radius-md)]" style={{ background: i + 1 < step ? "var(--ok)" : i + 1 === step ? "var(--color-accent)" : "var(--tint-2)" }} />
+          <div key={i} className="h-2 rounded-[var(--radius-md)]" style={{ background: i + 1 < step ? "var(--color-accent)" : i + 1 === step ? "var(--color-accent-tint)" : "var(--color-border)", boxShadow: i + 1 === step ? "inset 0 0 0 1px var(--color-accent)" : undefined }} />
         ))}
       </div>
       {t ? (

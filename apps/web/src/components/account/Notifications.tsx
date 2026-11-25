@@ -27,7 +27,7 @@ function Toggle({ def, on, disabled, note, onChange }: { def: NotificationDef; o
         checked={on}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-5 w-9 flex-none cursor-pointer appearance-none rounded-full bg-[var(--tint-2,var(--color-divider))] transition-colors before:block before:h-4 before:w-4 before:translate-x-0.5 before:rounded-full before:bg-white before:transition-transform checked:bg-[var(--color-accent)] checked:before:translate-x-[18px] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1 h-5 w-9 flex-none cursor-pointer appearance-none rounded-full bg-[var(--color-control-border)] transition-colors before:block before:h-4 before:w-4 before:translate-x-0.5 before:rounded-full before:bg-[var(--color-surface)] before:transition-transform checked:bg-[var(--color-accent)] checked:before:translate-x-[18px] disabled:cursor-not-allowed disabled:opacity-50"
       />
     </div>
   );

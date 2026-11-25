@@ -106,13 +106,13 @@ const esc = (s: string) =>
 export function layout(opts: { company: string; heading: string; paragraphs: string[]; cta?: { label: string; url: string }; footer?: string }) {
   const p = opts.paragraphs.map((x) => `<p style="margin:0 0 14px;line-height:1.6">${esc(x)}</p>`).join("");
   const cta = opts.cta
-    ? `<p style="margin:22px 0"><a href="${esc(opts.cta.url)}" style="display:inline-block;padding:10px 20px;border-radius:8px;background:#5b4fc4;color:#ffffff;text-decoration:none;font-weight:500">${esc(opts.cta.label)}</a></p>`
+    ? `<p style="margin:22px 0"><a href="${esc(opts.cta.url)}" style="display:inline-block;padding:10px 20px;border-radius:8px;background:#111111;color:#ffffff;text-decoration:none;font-weight:500">${esc(opts.cta.label)}</a></p>`
     : "";
-  const html = `<!doctype html><html><body style="margin:0;background:#f4f4f6;font-family:Inter,Segoe UI,Arial,sans-serif;color:#1d1e26">
+  const html = `<!doctype html><html><body style="margin:0;background:#f6f6f1;font-family:Inter,Segoe UI,Arial,sans-serif;color:#111111">
 <div style="max-width:560px;margin:0 auto;padding:32px 16px"><div style="background:#ffffff;border-radius:12px;padding:28px 24px">
 <div style="font-weight:600;margin-bottom:18px">${esc(opts.company)}</div>
 <h1 style="font-size:20px;font-weight:600;margin:0 0 16px">${esc(opts.heading)}</h1>${p}${cta}
-${opts.footer ? `<p style="margin:18px 0 0;font-size:12.5px;color:#6b6d7a">${esc(opts.footer)}</p>` : ""}
+${opts.footer ? `<p style="margin:18px 0 0;font-size:12.5px;color:#6b6b63">${esc(opts.footer)}</p>` : ""}
 </div></div></body></html>`;
   const text = [opts.heading, "", ...opts.paragraphs, ...(opts.cta ? ["", `${opts.cta.label}: ${opts.cta.url}`] : []), ...(opts.footer ? ["", opts.footer] : [])].join("\n");
   return { html, text };

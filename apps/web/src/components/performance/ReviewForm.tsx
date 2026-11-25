@@ -27,7 +27,7 @@ export function RatingInput({ value, onChange, label, disabled }: { value: numbe
             disabled={disabled}
             onClick={() => onChange(n)}
             className="h-8 w-9 border-e border-[var(--color-border)] text-[13px] last:border-e-0 disabled:cursor-not-allowed"
-            style={{ background: value === n ? "var(--color-accent)" : "transparent", color: value === n ? "white" : "var(--color-text)", fontWeight: value === n ? 600 : 400 }}
+            style={{ background: value === n ? "var(--color-accent-tint)" : "transparent", color: value === n ? "var(--color-accent)" : "var(--color-text)", boxShadow: value === n ? "inset 0 0 0 1px var(--color-accent)" : undefined, fontWeight: value === n ? 600 : 400 }}
           >
             {n}
           </button>

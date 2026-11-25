@@ -6,7 +6,10 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- The app now matches saralix.com: warm off-white (or near-black in dark mode) backgrounds, white cards with a hairline border, black primary buttons (off-white in dark mode), and a green accent for links, the active menu item, focus rings, checks and progress. All purple and lavender is gone, from the dashboard to the sign-in pages, emails, payslip and Form 16 PDFs and the login.saralix.com page. Every text and control pair meets WCAG AA in both modes.
+- The Saralix mark replaces the "S" tile in the sidebar, sign-in and sign-up, and in the favicon and app icons.
 
 ### Planned
 

@@ -10,14 +10,15 @@ export const A4 = { width: 595.28, height: 841.89 };
 export const MARGIN = 40;
 
 export const colors = {
-  text: rgb(0.11, 0.12, 0.15),
-  muted: rgb(0.39, 0.4, 0.46),
-  divider: rgb(0.85, 0.86, 0.89),
-  tint: rgb(0.95, 0.96, 0.97),
-  okBg: rgb(0.91, 0.96, 0.93),
-  okFg: rgb(0.12, 0.36, 0.2),
-  accent: rgb(0.36, 0.32, 0.58),
-  bad: rgb(0.7, 0.16, 0.16),
+  // the Saralix palette (apps/web/src/styles/theme.css, light)
+  text: rgb(0.067, 0.067, 0.067), // #111111
+  muted: rgb(0.42, 0.42, 0.388), // #6b6b63
+  divider: rgb(0.894, 0.894, 0.863), // #e4e4dc
+  tint: rgb(0.937, 0.937, 0.914), // #efefe9
+  okBg: rgb(0.902, 0.949, 0.925), // #e6f2ec
+  okFg: rgb(0.059, 0.478, 0.333), // #0f7a55
+  accent: rgb(0.059, 0.478, 0.333), // #0f7a55
+  bad: rgb(0.706, 0.137, 0.094), // #b42318
 };
 
 const WIN_ANSI = /[ -~ -ÿ–—‘’“”•…€]/;
