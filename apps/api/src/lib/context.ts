@@ -4,7 +4,7 @@ import { createDb, memberships, platformStaff, roles, tenants } from "@hrms/db";
 import { can, MODULES, readTwoFactorPolicy, twoFactorRequired, type Action, type Module, type PermissionMatrix } from "@hrms/shared";
 import type { AppEnv, Env } from "../env";
 import { createAuth } from "./auth";
-import { ConsoleMailer, ResendMailer, SkipDemoMailer, UnconfiguredMailer, type Mailer } from "./email";
+import { CloudflareMailer, ConsoleMailer, ResendMailer, SkipDemoMailer, UnconfiguredMailer, type Mailer } from "./email";
 import { ApiError, forbidden, unauthorized } from "./errors";
 import { featuresFor } from "../services/flags";
 import { activeAccess, OPEN_STATUSES } from "../services/support";
@@ -16,8 +16,9 @@ export function getDevMailer() {
   return devMailer;
 }
 
-/** Resend when configured; never logs email bodies in production or staging. */
+/** Cloudflare Email Service when bound, else Resend; never logs email bodies in production or staging. */
 export function mailerFor(env: Env): Mailer {
+  if (env.EMAIL && env.EMAIL_FROM) return new SkipDemoMailer(new CloudflareMailer(env.EMAIL, env.EMAIL_FROM));
   if (env.RESEND_API_KEY && env.EMAIL_FROM) return new SkipDemoMailer(new ResendMailer(env.RESEND_API_KEY, env.EMAIL_FROM));
   return env.ENVIRONMENT === "production" || env.ENVIRONMENT === "staging" ? new UnconfiguredMailer() : getDevMailer();
 }

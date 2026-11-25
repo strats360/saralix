@@ -6,6 +6,10 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
+### Added
+
+- Email through Cloudflare Email Service: set `EMAIL_SERVICE` to `cloudflare` and `EMAIL_FROM` to an address on a domain onboarded there, and deploy. Resend still works when that isn't set. The deploy summary and the health check say which one is in use.
+
 ### Fixed
 
 - The health check, control plane and platform console showed version 1.4.0, an old internal number. They now show the release version, and a test keeps it in step with package.json and this changelog.

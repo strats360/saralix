@@ -23,7 +23,7 @@ Use **staging** first, then **production**. Each has its own GitHub environment,
 | --- | --- | --- |
 | Cloudflare | **Workers Paid** | The free plan's 10 ms CPU limit is too low for payroll runs and reports |
 | Neon | Launch or higher for production (Free is fine for staging) | Always-on compute, longer point-in-time restore |
-| Resend | Any | Invites, password resets, payslip and claim emails. Needs your sending domain verified |
+| Cloudflare Email Service, or Resend | Workers Paid for Cloudflare | Invites, password resets, payslip and claim emails. Needs your sending domain verified |
 | A domain on Cloudflare | Optional | For `hrms.yourcompany.com` instead of a `workers.dev` address |
 
 ## 2. Neon
@@ -82,6 +82,7 @@ On each environment, add:
 | --- | --- | --- |
 | `CUSTOM_DOMAIN` | `hrms.strats360.com` (production), `hrms-staging.strats360.com` | the `workers.dev` address |
 | `EMAIL_FROM` | `Saralix <people@strats360.com>` | none (email off) |
+| `EMAIL_SERVICE` | `cloudflare` to send with Cloudflare Email Service | blank: Resend, when `RESEND_API_KEY` is set |
 | `WORKER_NAME` | `saralix` | `saralix`, or `saralix-staging` |
 | `CASHFREE_ENV` | `production` on production, `sandbox` on staging | `sandbox` |
 | `ALLOWED_COUNTRIES` | `IN`, or `AE,QA,KW,OM` on a Gulf site | `IN` |
@@ -100,7 +101,10 @@ From the platform console, create your first company under Tenants, or let compa
 
 ## 7. After the first production deploy
 
-- **Email:** in Resend, add your sending domain and the DNS records it gives you (SPF, DKIM). Then set `RESEND_API_KEY` and `EMAIL_FROM` and deploy again.
+- **Email**, either way:
+  - **Cloudflare Email Service** (no extra account): on the Workers Paid plan, open Email Service › Sending in the Cloudflare dashboard and add your sending domain; with the domain on Cloudflare DNS, the SPF and DKIM records are added for you. Wait until it shows as verified. Then set the variables `EMAIL_FROM` (an address on that domain) and `EMAIL_SERVICE` = `cloudflare`, and deploy again. The Worker gets a `send_email` binding that can only send from `EMAIL_FROM`.
+  - **Resend:** add your sending domain and its DNS records in Resend, set `RESEND_API_KEY` and `EMAIL_FROM`, and deploy again.
+  - The deploy summary shows which one is in use. Send yourself a password reset to check. Errors show in the Worker's logs.
 - **Cloudflare security** (dashboard › your domain):
   - Security › WAF › Rate limiting: limit `/api/auth/*` and `/api/public/*` (for example 30 requests a minute per IP).
   - Turn on Bot Fight Mode.

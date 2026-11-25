@@ -12,6 +12,9 @@
  *   CUSTOM_DOMAIN                                 overrides the site's domain (zone must be on this account)
  *   APP_URL                                       optional; defaults to https://CUSTOM_DOMAIN or the workers.dev URL
  *   EMAIL_FROM                                    optional, e.g. "Saralix <people@strats360.com>"
+ *   EMAIL_SERVICE                                 "cloudflare" adds the Cloudflare Email Service send_email binding
+ *                                                 (EMAIL), allowed to send only from EMAIL_FROM. Otherwise Resend is used
+ *                                                 when RESEND_API_KEY is set.
  *   CASHFREE_ENV                                  sandbox | production (default sandbox)
  *   ALLOWED_COUNTRIES                             entity countries this site allows, e.g. "IN" or "AE,QA,KW,OM" (default IN)
  *   DEFAULT_TIME_ZONE, DEFAULT_CURRENCY           the site's default zone and currency (default Asia/Kolkata, INR)
@@ -132,7 +135,13 @@ async function workersDevUrl() {
 // ---------------------------------------------------------------------------
 // Worker config
 // ---------------------------------------------------------------------------
-export function workerConfig({ hyperdriveId, appUrl, emailFrom, customDomain }) {
+/** The bare address in "Name <address>". */
+export const fromAddress = (from) => (from?.match(/<([^>]+)>/)?.[1] ?? from ?? "").trim();
+
+export function workerConfig({ hyperdriveId, appUrl, emailFrom, customDomain, emailService = env.EMAIL_SERVICE }) {
+  const sender = fromAddress(emailFrom);
+  const cfEmail = String(emailService ?? "").trim().toLowerCase() === "cloudflare";
+  if (cfEmail && !sender) fail("EMAIL_SERVICE=cloudflare needs EMAIL_FROM, an address on a domain onboarded in Cloudflare Email Service");
   return {
     $schema: "node_modules/wrangler/config-schema.json",
     name: worker,
@@ -154,6 +163,7 @@ export function workerConfig({ hyperdriveId, appUrl, emailFrom, customDomain }) 
     },
     hyperdrive: [{ binding: "HYPERDRIVE", id: hyperdriveId }],
     r2_buckets: [{ binding: "FILES", bucket_name: bucket }],
+    ...(cfEmail ? { send_email: [{ name: "EMAIL", allowed_sender_addresses: [sender] }] } : {}),
   };
 }
 

@@ -102,10 +102,11 @@ export function buildApp() {
       authSecret: (c.env.BETTER_AUTH_SECRET ?? "").length >= 32,
       encryptionKey: !!c.env.ENCRYPTION_KEY,
       files: !!c.env.FILES,
-      email: !!(c.env.RESEND_API_KEY && c.env.EMAIL_FROM),
+      email: !!(c.env.EMAIL_FROM && (c.env.EMAIL || c.env.RESEND_API_KEY)),
       payments: !!(c.env.CASHFREE_APP_ID && c.env.CASHFREE_SECRET_KEY),
       database: false,
     };
+    const emailService = c.env.EMAIL && c.env.EMAIL_FROM ? "cloudflare" : c.env.RESEND_API_KEY && c.env.EMAIL_FROM ? "resend" : null;
     let migrations = 0;
     const url = c.env.HYPERDRIVE?.connectionString ?? c.env.DATABASE_URL;
     if (url) {
@@ -126,7 +127,7 @@ export function buildApp() {
       }
     }
     const ok = checks.database && checks.authSecret && checks.encryptionKey;
-    return c.json({ ...base, ok, checks, migrations }, ok ? 200 : 503);
+    return c.json({ ...base, ok, checks, emailService, migrations }, ok ? 200 : 503);
   });
   api.use("*", services);
   // the control plane's view of this site: company level only, token protected

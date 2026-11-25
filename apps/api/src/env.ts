@@ -18,6 +18,8 @@ export interface Env {
   ENCRYPTION_KEY: string;
   EMAIL_FROM?: string;
   RESEND_API_KEY?: string;
+  /** Cloudflare Email Service send binding, added at deploy when EMAIL_SERVICE=cloudflare. */
+  EMAIL?: SendEmail;
   ENVIRONMENT?: string;
   /** Countries entities may use on this instance, comma separated ISO codes (default IN). See docs/MULTI_COUNTRY.md. */
   ALLOWED_COUNTRIES?: string;

@@ -22,17 +22,56 @@ export class ConsoleMailer implements Mailer {
   }
 }
 
-/** Resend (https://resend.com) over plain fetch so it runs on Workers. */
 /**
  * Production without an email provider: nothing is sent, and the message body is
  * never logged (it can hold password-reset and invite links).
  */
 export class UnconfiguredMailer implements Mailer {
   async send(msg: EmailMessage) {
-    console.warn(`[email] not sent (RESEND_API_KEY / EMAIL_FROM not set): "${msg.subject}" to ${msg.to.replace(/^[^@]+/, "***")}`);
+    console.warn(`[email] not sent (no email service: set EMAIL_FROM and Cloudflare Email Service or RESEND_API_KEY): "${msg.subject}" to ${msg.to.replace(/^[^@]+/, "***")}`);
   }
 }
 
+/** "Saralix <no-reply@saralix.com>" → { name: "Saralix", email: "no-reply@saralix.com" } */
+export function parseFrom(from: string): string | { email: string; name: string } {
+  const m = from.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  if (!m) return from.trim();
+  return m[1]!.trim() ? { email: m[2]!.trim(), name: m[1]!.trim() } : m[2]!.trim();
+}
+
+const fromBase64 = (b64: string) => Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+
+const mimeOf = (name: string) => (/\.pdf$/i.test(name) ? "application/pdf" : /\.csv$/i.test(name) ? "text/csv" : /\.xlsx$/i.test(name) ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/octet-stream");
+
+/**
+ * Cloudflare Email Service, through the Worker's send_email binding. The sender must be on a
+ * domain onboarded in Email Service. If a message with attachments is refused, it goes again
+ * without them (the email still says where to find the file in Saralix).
+ */
+export class CloudflareMailer implements Mailer {
+  constructor(
+    private binding: SendEmail,
+    private from: string,
+  ) {}
+  async send(msg: EmailMessage) {
+    const base = { to: msg.to, from: parseFrom(this.from), subject: msg.subject, html: msg.html, text: msg.text, ...(msg.replyTo ? { replyTo: msg.replyTo } : {}) };
+    try {
+      await this.binding.send(msg.attachments?.length ? { ...base, attachments: msg.attachments.map((a) => ({ disposition: "attachment" as const, filename: a.filename, type: mimeOf(a.filename), content: fromBase64(a.content) })) } : base);
+    } catch (e) {
+      console.error("Cloudflare Email Service error", e instanceof Error ? e.message : e);
+      if (!msg.attachments?.length) throw new Error("Email could not be sent");
+      try {
+        await this.binding.send(base);
+        console.warn(`[email] sent "${msg.subject}" without its ${msg.attachments.length} attachment(s) after Cloudflare refused them`);
+      } catch (e2) {
+        console.error("Cloudflare Email Service error (retry without attachments)", e2 instanceof Error ? e2.message : e2);
+        throw new Error("Email could not be sent");
+      }
+    }
+  }
+}
+
+/** Resend (https://resend.com) over plain fetch so it runs on Workers. */
 export class ResendMailer implements Mailer {
   constructor(
     private apiKey: string,
