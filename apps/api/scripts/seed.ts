@@ -34,6 +34,7 @@ import {
   roles,
   tenants,
   attendanceRecords,
+  feedback,
   keyResults,
   kudos,
   objectives,
@@ -117,6 +118,7 @@ async function main() {
     await seedPayments(existing.id);
     await seedEngagement(existing.id);
     await seedOkrs(existing.id);
+    await seedFeedback(existing.id);
     if (!DEMO) await seedBilling(existing.id);
     console.log(added ? `Added ${added} months of payroll history to the existing demo tenant.` : "Demo tenant already exists. To reseed, drop and recreate the database, then run migrations.");
     await db.$client.end();
@@ -439,6 +441,7 @@ async function main() {
   await seedPayments(tid);
   await seedEngagement(tid);
   await seedOkrs(tid);
+  await seedFeedback(tid);
   if (DEMO) await db.update(tenants).set({ settings: sql`${tenants.settings} || '{"demo": true}'::jsonb` }).where(eq(tenants.id, tid));
   else await seedBilling(tid);
   console.log(`Payroll history: ${months} locked months`);
@@ -454,6 +457,22 @@ async function main() {
   ]);
   if (!DEMO) console.log("Try employee self-onboarding with:", links[0]);
   await db.$client.end();
+}
+
+/** Some feedback between the demo people, and one request waiting for Priya. */
+async function seedFeedback(tid: string) {
+  const [any] = await db.select({ id: feedback.id }).from(feedback).where(eq(feedback.tenantId, tid)).limit(1);
+  if (any) return;
+  const emp = new Map((await db.select({ id: employees.id, code: employees.employeeCode }).from(employees).where(eq(employees.tenantId, tid))).map((e) => [e.code, e.id]));
+  const e = (c: string) => emp.get(c)!;
+  if (!emp.has("STL-0042") || !emp.has("STL-0001")) return;
+  const at = (d: number) => new Date(new Date(`${today}T06:00:00Z`).getTime() - d * 86_400_000);
+  await db.insert(feedback).values([
+    { tenantId: tid, kind: "given", aboutEmployeeId: e("STL-0042"), fromEmployeeId: e("STL-0091"), status: "submitted", strengths: "The new payslip layout cut our month end questions in half. Thank you for listening to the payroll team.", improvements: "A heads up before changing the export columns would help us update our sheets.", submittedAt: at(3), createdAt: at(3) },
+    { tenantId: tid, kind: "request", aboutEmployeeId: e("STL-0042"), fromEmployeeId: e("STL-0001"), requestedByName: "Priya Vaghela", prompt: "How did I do leading the payslip performance work?", status: "submitted", strengths: "You broke a fuzzy problem into clear steps and kept everyone posted.", improvements: "Pull in design earlier next time.", submittedAt: at(6), createdAt: at(9) },
+    { tenantId: tid, kind: "request", aboutEmployeeId: e("STL-0078"), fromEmployeeId: e("STL-0042"), requestedByName: "Jignesh Parmar", prompt: "Was my code review feedback useful this month?", status: "requested", createdAt: at(1) },
+  ]);
+  console.log("Feedback: 3 examples");
 }
 
 /** This quarter's OKRs: two company objectives, team ones under them, and a personal one. */

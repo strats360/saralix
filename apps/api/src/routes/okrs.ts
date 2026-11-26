@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono";
+import { createMiddleware } from "hono/factory";
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { departments, employees, keyResults, objectives, okrCheckins } from "@hrms/db";
@@ -102,10 +103,10 @@ async function detail(c: Context<AppEnv>, o: Objective) {
 
 export const okrRoutes = new Hono<AppEnv>();
 okrRoutes.use("*", requirePerm("employees", "view"));
-const hrOnly = async (c: Context<AppEnv>, next: () => Promise<void>) => {
+const hrOnly = createMiddleware<AppEnv>(async (c, next) => {
   if (!isHr(c)) throw forbidden();
   await next();
-};
+});
 
 okrRoutes.get("/", v("query", periodQuery), async (c) => {
   const period = c.req.valid("query").period ?? periodOf(todayLocal());

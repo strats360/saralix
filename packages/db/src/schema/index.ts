@@ -22,6 +22,7 @@ export * from "./announcements";
 export * from "./engagement";
 export * from "./kyc";
 export * from "./okrs";
+export * from "./feedback";
 export * from "./helpdesk";
 export * from "./contractors";
 export * from "./fbp";

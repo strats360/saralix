@@ -17,6 +17,9 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 - A Company KYC queue in the platform console. The team opens each document, then approves, asks for more with a note, or rejects. The company's admins get an email either way, and every step is kept in the history and the audit log.
 - "Verify your company" is now the first step on the Get started card.
 - OKRs: objectives with two to six key results (a number, a percentage, an amount in rupees, or done or not) for the company, a team or a person, by quarter or year of the Indian financial year. Objectives line up under bigger ones, so the board shows how personal goals feed team and company goals. Owners check in with new values, how confident they are and a note; progress and history follow. HR sets company and team objectives; people add their own, and managers add and update their team's. Personal objectives are seen only by the person, their manager and HR.
+- Feedback. Anyone can give a colleague feedback (what they do well, what they could do better), for them and their manager or for the manager only, and ask up to 10 colleagues for feedback about themselves. Requests arrive by email and in self-service, where people answer or decline.
+- 360 feedback in reviews. The reviewing manager or HR asks colleagues for feedback on someone, with an overall 1 to 5. The manager and HR see who said what; the person sees the words without names once the review is shared, and only if at least three people answered.
+- Self-service Performance now has three tabs: Reviews, OKRs and Feedback. A new email switch, "Feedback", covers requests and answers.
 
 ### Changed
 

@@ -5,6 +5,7 @@ import { announcementRoutes, essAnnouncementRoutes } from "./routes/announcement
 import { engagementRoutes, essEngagementRoutes } from "./routes/engagement";
 import { kycRoutes, platformKycRoutes } from "./routes/kyc";
 import { essOkrRoutes, okrRoutes } from "./routes/okrs";
+import { essFeedbackRoutes, reviewFeedbackRoutes } from "./routes/feedback";
 import { essTimesheetRoutes, timesheetRoutes } from "./routes/timesheets";
 import { assetRoutes, essAssetRoutes } from "./routes/assets";
 import { careersRoutes, myInterviewRoutes, recruitmentRoutes } from "./routes/recruitment";
@@ -176,6 +177,8 @@ export function buildApp() {
   t.use("/admin/performance/*", requireFeature("module.performance"));
   t.use("/admin/okrs/*", requireFeature("module.performance"));
   t.use("/ess/okrs/*", requireFeature("module.performance"));
+  t.use("/ess/feedback/*", requireFeature("module.performance"));
+  t.use("/admin/review-feedback/*", requireFeature("module.performance"));
   t.use("/admin/recruitment/*", requireFeature("module.recruitment"));
   t.use("/ess/interviews/*", requireFeature("module.recruitment"));
   t.use("/admin/assets/*", requireFeature("module.assets"));
@@ -207,6 +210,7 @@ export function buildApp() {
   t.route("/ess/dpdp", essDpdpRoutes);
   t.route("/ess/reviews", essPerformanceRoutes);
   t.route("/ess/okrs", essOkrRoutes);
+  t.route("/ess/feedback", essFeedbackRoutes);
   t.route("/ess/interviews", myInterviewRoutes);
   t.route("/ess/assets", essAssetRoutes);
   t.route("/ess/timesheets", essTimesheetRoutes);
@@ -226,6 +230,7 @@ export function buildApp() {
   t.route("/admin/dpdp", dpdpAdminRoutes);
   t.route("/admin/performance", performanceRoutes);
   t.route("/admin/okrs", okrRoutes);
+  t.route("/admin/review-feedback", reviewFeedbackRoutes);
   t.route("/admin/recruitment", recruitmentRoutes);
   t.route("/admin/assets", assetRoutes);
   t.route("/admin/contractors", contractorRoutes);

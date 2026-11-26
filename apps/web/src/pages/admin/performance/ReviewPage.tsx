@@ -13,6 +13,7 @@ import { AssessmentForm, GoalEditor, ReviewSummary } from "@/components/performa
 import type { ReviewDetail } from "@/components/performance/types";
 import { STAGE_TONE } from "@/pages/ess/Reviews";
 import { CalibrateDialog } from "./CycleDetail";
+import { ReviewFeedback } from "@/components/feedback/ReviewFeedback";
 
 export default function ReviewPage() {
   const { id = "" } = useParams();
@@ -74,6 +75,7 @@ export default function ReviewPage() {
             ))}
           </Card>
         ) : null}
+        <ReviewFeedback reviewId={r.id} employeeId={r.employee.id} name={r.employee.name ?? "them"} open={open && (r.stage === "self" || r.stage === "manager" || r.stage === "calibration")} />
         {r.acknowledgedAt ? <div className="text-muted text-[12.5px]">{r.employee.name} acknowledged this on {fmtDate(r.acknowledgedAt.slice(0, 10))}.</div> : null}
       </div>
       {calibrating ? <CalibrateDialog row={{ id: r.id, name: r.employee.name ?? "", managerScore: r.managerScore, finalRating: r.finalRating }} onClose={() => setCalibrating(false)} onDone={() => qc.invalidateQueries({ queryKey: ["performance"] })} /> : null}

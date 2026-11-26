@@ -39,7 +39,7 @@ export default function EssReviews() {
   return (
     <>
       <div>
-        <h1 className="!mb-1 text-[26px]">Reviews</h1>
+        <h1 className="!mb-1 text-[26px]">Performance</h1>
         <div className="text-muted text-[13.5px]">Set your goals, rate how the period went, and read your manager's review.</div>
       </div>
       <RouteTabs tabs={ESS_PERFORMANCE_TABS} />
