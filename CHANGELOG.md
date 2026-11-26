@@ -6,14 +6,7 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-### Fixed
-
-- After a deploy, a tab opened before it no longer shows "Failed to fetch dynamically imported module". It reloads once by itself to pick up the new version.
-- A page that fails now shows a Saralix error page with Reload and Go to dashboard, in place of the router's technical screen. The details go to the browser console, not the screen.
-
-### Changed
-
-- The build and deploy workflows use the Node 24 versions of their GitHub actions, which clears the Node 20 warning.
+Nothing yet.
 
 ### Planned
 
@@ -26,6 +19,19 @@ These need something from us before they can be built or switched on:
 - State minimum wage tables by zone and skill, and an ESI and PT check against a second source (network access to hrengage.ai).
 - A staging site, and the Gulf, Saudi, UK, US and Canada sites (a Neon database and GitHub environment for each). The country packs are already built.
 - Expert review of the golden payroll files and of the flexible benefit caps.
+
+## [1.2.1] - 2026-11-26
+
+Fixes the error some people saw when opening a page in a tab from before a deploy.
+
+### Fixed
+
+- After a deploy, a tab opened before it no longer shows "Failed to fetch dynamically imported module". It reloads once by itself to pick up the new version.
+- A page that fails now shows a Saralix error page with Reload and Go to dashboard, in place of the router's technical screen. The details go to the browser console, not the screen.
+
+### Changed
+
+- The build and deploy workflows use the Node 24 versions of their GitHub actions, which clears the Node 20 warning.
 
 ## [1.2.0] - 2026-11-26
 
@@ -103,7 +109,8 @@ The first release: the India site at app.saralix.com, with everything built so f
 - Reports, and free income tax and gratuity calculators at /tools.
 - Multi-country groundwork: country packs for the UAE, Saudi Arabia, Qatar, Kuwait, Oman, Bahrain, the UK, the US and Canada; a control plane with one sign in page; wave rollouts, monitoring, backups and restore drills.
 
-[Unreleased]: https://github.com/strats360/saralix/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/strats360/saralix/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/strats360/saralix/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/strats360/saralix/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/strats360/saralix/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/strats360/saralix/releases/tag/v1.0.0
