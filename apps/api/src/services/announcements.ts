@@ -1,4 +1,5 @@
 import { retryDueDeliveries } from "./webhooks";
+import { runSurveyJobs } from "./engagement";
 import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { announcements, createDb, employees, tenants, type Database } from "@hrms/db";
 import { ANNOUNCEMENT_CATEGORY_LABEL, type AnnouncementCategory } from "@hrms/shared";
@@ -73,6 +74,12 @@ export async function runHourly(env: Env) {
     if (r.posts) console.log(`announcements: ${r.posts} scheduled posts, ${r.sent} emails`);
   } catch (e) {
     console.error("scheduled announcements failed", e);
+  }
+  try {
+    const r = await runSurveyJobs(db, env);
+    if (r.closed || r.reminders) console.log(`surveys: closed ${r.closed}, reminded ${r.reminded} people about ${r.reminders}`);
+  } catch (e) {
+    console.error("survey jobs failed", e);
   } finally {
     await db.$client.end({ timeout: 5 });
   }

@@ -13,6 +13,7 @@ import {
   Laptop,
   LifeBuoy,
   Megaphone,
+  PartyPopper,
   Receipt,
   Settings,
   ShieldCheck,
@@ -68,6 +69,7 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { to: "/helpdesk", label: "Helpdesk", icon: Inbox, perm: ["helpdesk"], feature: "module.helpdesk" },
       { to: "/announcements", label: "Announcements", icon: Megaphone, perm: ["employees", "edit"], feature: "module.announcements" },
+      { to: "/engagement", label: "Engagement", icon: PartyPopper, perm: ["employees", "edit"], feature: "module.engagement" },
       { to: "/assets", label: "Assets", icon: Laptop, perm: ["assets"], feature: "module.assets" },
       { to: "/reports", label: "Reports", icon: BarChart3, perm: ["reports"] },
       { to: "/settings", label: "Settings", icon: Settings, perm: ["settings"] },

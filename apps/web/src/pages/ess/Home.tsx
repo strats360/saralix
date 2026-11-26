@@ -153,6 +153,7 @@ export default function EssHomePage() {
 
       <InstallCard />
       <ReviewNotice />
+      <SurveyNotice />
       <InterviewNotice />
       <TimesheetNotice />
       <AnnouncementsCard />
@@ -286,6 +287,22 @@ function ReviewNotice() {
   return list.length ? (
     <Link to="/me/reviews" className="text-[13px] md:hidden">Your performance reviews</Link>
   ) : null;
+}
+
+/** A survey waiting for an answer, and the way to kudos on phones (no room in the tab bar). */
+function SurveyNotice() {
+  const { has } = useSession();
+  const q = useQuery({ queryKey: ["surveys", "ess"], queryFn: () => api.get<{ id: string; title: string; status: string; answered: boolean; closesOn: string | null }[]>("/ess/engagement/surveys"), enabled: has("module.engagement"), staleTime: 60_000 });
+  if (!has("module.engagement")) return null;
+  const todo = (q.data ?? []).filter((s) => s.status === "open" && !s.answered);
+  if (todo.length)
+    return (
+      <Notice tone="sel">
+        {todo.length === 1 ? `"${todo[0]!.title}" is waiting for your answer${todo[0]!.closesOn ? ` until ${fmtDate(todo[0]!.closesOn)}` : ""}. ` : `${todo.length} surveys are waiting for your answer. `}
+        <Link to={todo.length === 1 ? `/me/engagement/surveys/${todo[0]!.id}` : "/me/engagement"} style={{ color: "inherit", textDecoration: "underline" }}>Answer now</Link>
+      </Notice>
+    );
+  return <Link to="/me/engagement" className="text-[13px] md:hidden">Kudos and surveys</Link>;
 }
 
 /** Interviews waiting for this person's feedback, or coming up today. */

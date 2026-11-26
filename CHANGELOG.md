@@ -6,7 +6,13 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Engagement: pulse checks, polls and surveys with five answer types (1 to 5 rating, 0 to 10 recommend score for eNPS, one choice, several choices, written). Start from scratch or from a template (eNPS, monthly pulse, quick poll, new joiner check in), pick who it's for, set a closing date, and send it. People get an email and a reminder the day before it closes; it closes on its own.
+- Anonymous surveys never store who said what. Results show once three people have answered, team breakdowns hide any team under three, and written answers are never shown by team. For named surveys HR sees who hasn't answered and can remind just them.
+- Results with averages, the eNPS score, and bars for each answer, by department. HR can share the results with staff once a survey closes.
+- Kudos: thank up to 10 colleagues at once for one of your company values. Everyone sees it on the kudos wall, the people thanked get an email, and anyone can cheer it. HR sets the values, can switch kudos off, sees who gives and gets the most, and can hide a post.
+- Two new email switches: "Surveys and polls" and "Kudos for you".
 
 ### Planned
 

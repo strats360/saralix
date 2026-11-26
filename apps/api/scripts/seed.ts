@@ -34,6 +34,10 @@ import {
   roles,
   tenants,
   attendanceRecords,
+  kudos,
+  surveyParticipants,
+  surveyResponses,
+  surveys,
 } from "@hrms/db";
 import { DEMO_EMAIL_DOMAIN, randomToken, countLeaveDays, dateRange, encryptField, evaluateAttendance, sha256Hex, todayLocal, weekday, DEFAULT_SHIFT } from "@hrms/shared";
 import { upsertLogin } from "../src/services/users";
@@ -108,6 +112,7 @@ async function main() {
     const added = await seedPayroll(existing.id);
     await seedChallans(existing.id);
     await seedPayments(existing.id);
+    await seedEngagement(existing.id);
     if (!DEMO) await seedBilling(existing.id);
     console.log(added ? `Added ${added} months of payroll history to the existing demo tenant.` : "Demo tenant already exists. To reseed, drop and recreate the database, then run migrations.");
     await db.$client.end();
@@ -428,6 +433,7 @@ async function main() {
   const months = await seedPayroll(tid);
   await seedChallans(tid);
   await seedPayments(tid);
+  await seedEngagement(tid);
   if (DEMO) await db.update(tenants).set({ settings: sql`${tenants.settings} || '{"demo": true}'::jsonb` }).where(eq(tenants.id, tid));
   else await seedBilling(tid);
   console.log(`Payroll history: ${months} locked months`);
@@ -443,6 +449,52 @@ async function main() {
   ]);
   if (!DEMO) console.log("Try employee self-onboarding with:", links[0]);
   await db.$client.end();
+}
+
+/** A finished eNPS pulse with shared results, an open monthly pulse, and some kudos. Same data every run. */
+async function seedEngagement(tid: string) {
+  const [any] = await db.select({ id: surveys.id }).from(surveys).where(eq(surveys.tenantId, tid)).limit(1);
+  if (any) return;
+  let n = 7;
+  const rnd = () => ((n = (n * 16807) % 2147483647) - 1) / 2147483646;
+  const staff = await db.select({ id: employees.id, code: employees.employeeCode, departmentId: employees.departmentId }).from(employees).where(and(eq(employees.tenantId, tid), sql`${employees.status} in ('probation','active','notice')`));
+  const day = (offset: number) => new Date(new Date(`${today}T00:00:00Z`).getTime() + offset * 86_400_000).toISOString().slice(0, 10);
+  const pick = <T,>(xs: T[]) => xs[Math.floor(rnd() * xs.length)]!;
+  const COMMENTS = ["Great team, flexible hours.", "Better growth paths would help.", "Managers really listen.", "More learning budget please.", "Workload spikes at month end.", "Love the office culture.", "Clearer goals each quarter."];
+
+  const [enpsSurvey] = await db.insert(surveys).values({ tenantId: tid, title: "Would you recommend working here?", description: "Two quick questions. Your answers are anonymous.", kind: "pulse", anonymous: true, questions: [{ id: "q1", type: "enps", text: "How likely are you to recommend this company as a place to work?", options: [], required: true }, { id: "q2", type: "text", text: "What's the main reason for your score?", options: [], required: false }], status: "closed", openedAt: new Date(`${day(-40)}T04:30:00Z`), closesOn: day(-26), closedAt: new Date(`${day(-25)}T04:30:00Z`), shareResults: true, invited: staff.length, authorName: "Nisha Trivedi" }).returning();
+  const [monthly] = await db.insert(surveys).values({ tenantId: tid, title: "Monthly pulse", description: "Five quick questions about how work is going. Your answers are anonymous.", kind: "pulse", anonymous: true, questions: [{ id: "q1", type: "scale", text: "I feel good about my work this month.", options: [], required: true }, { id: "q2", type: "scale", text: "My manager supports me when I need it.", options: [], required: true }, { id: "q3", type: "scale", text: "I have what I need to do my job well.", options: [], required: true }, { id: "q4", type: "scale", text: "My workload is manageable.", options: [], required: true }, { id: "q5", type: "text", text: "Is there anything we could do better?", options: [], required: false }], status: "open", openedAt: new Date(`${day(-3)}T04:30:00Z`), closesOn: day(7), invited: staff.length, authorName: "Nisha Trivedi" }).returning();
+
+  // people with demo logins are left out, so you can answer the open pulse yourself
+  const answering = staff.filter((e) => !["STL-0001", "STL-0042", "STL-0063", "STL-0091", "STL-0171"].includes(e.code));
+  for (const [s, share, make] of [
+    [enpsSurvey!, 0.72, () => ({ q1: Math.min(10, Math.max(0, Math.round(8 + (rnd() - 0.4) * 5))), ...(rnd() < 0.3 ? { q2: pick(COMMENTS) } : {}) })],
+    [monthly!, 0.41, () => ({ q1: 3 + Math.round(rnd() * 2), q2: 3 + Math.round(rnd() * 2), q3: 2 + Math.round(rnd() * 3), q4: 2 + Math.round(rnd() * 2), ...(rnd() < 0.2 ? { q5: pick(COMMENTS) } : {}) })],
+  ] as const) {
+    const who = answering.filter(() => rnd() < share);
+    for (let i = 0; i < who.length; i += 100) {
+      const chunk = who.slice(i, i + 100);
+      await db.insert(surveyParticipants).values(chunk.map((e) => ({ surveyId: s.id, employeeId: e.id, tenantId: tid })));
+      await db.insert(surveyResponses).values(chunk.map((e) => ({ tenantId: tid, surveyId: s.id, employeeId: null, departmentId: e.departmentId, answers: make(), submittedOn: s.status === "open" ? day(-Math.floor(rnd() * 3)) : day(-40 + Math.floor(rnd() * 14)) })));
+    }
+  }
+
+  const byCode = new Map(staff.map((e) => [e.code, e.id]));
+  const KUDOS: [string, string[], string, string, number][] = [
+    ["STL-0001", ["STL-0042"], "ownership", "Picked up the payroll export bug on a Friday evening and had it fixed before Monday. Thank you!", 1],
+    ["STL-0063", ["STL-0001", "STL-0078"], "teamwork", "The client demo went brilliantly. Great work pulling the release together as a team.", 2],
+    ["STL-0042", ["STL-0063"], "customer", "Thanks for answering every one of my onboarding questions so patiently.", 4],
+    ["STL-0091", ["STL-0118"], "learning", "Ran a superb lunch and learn on the new tax regime. Everyone came away clearer.", 6],
+    ["STL-0078", ["STL-0104"], "extra_mile", "Stayed back to help the support team clear the queue during the outage.", 8],
+    ["STL-0171", ["STL-0063", "STL-0091"], "ownership", "Closing the books three days early this quarter was a huge effort. Well done.", 11],
+    ["STL-0104", ["STL-0001"], "teamwork", "Thanks for reviewing my pull requests so quickly all week.", 13],
+    ["STL-0118", ["STL-0042"], "customer", "The customer wrote in to praise how you handled their escalation.", 17],
+  ];
+  for (const [from, to, value, message, ago] of KUDOS) {
+    const f = byCode.get(from), t = to.map((c) => byCode.get(c)).filter((x): x is string => !!x);
+    if (f && t.length) await db.insert(kudos).values({ tenantId: tid, fromEmployeeId: f, toEmployeeIds: t, value, message, createdAt: new Date(`${day(-ago)}T06:${String(10 + ago).padStart(2, "0")}:00Z`) });
+  }
+  console.log("Engagement: 2 surveys and some kudos");
 }
 
 /**

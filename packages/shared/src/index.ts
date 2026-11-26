@@ -29,6 +29,7 @@ export * from "./recruitment";
 export * from "./assets";
 export * from "./timesheets";
 export * from "./announcements";
+export * from "./engagement";
 export * from "./helpdesk";
 export * from "./countries";
 export * from "./formula";
