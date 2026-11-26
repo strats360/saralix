@@ -64,9 +64,8 @@ export const runEventData = (run: { id: string; entityId: string | null; kind: s
 });
 
 /** Queues an event for every webhook that wants it, and tries to send it straight away. */
-export async function emitEvent(c: Context<AppEnv>, event: WebhookEvent, data: Record<string, unknown>) {
+export async function emitEvent(c: Context<AppEnv>, event: WebhookEvent, data: Record<string, unknown>, tenantId: string = c.get("tenant").tenantId) {
   const db = c.get("db");
-  const tenantId = c.get("tenant").tenantId;
   try {
     const hooks = await db.select({ id: webhooks.id }).from(webhooks).where(and(eq(webhooks.tenantId, tenantId), eq(webhooks.active, true), sql`${event} = any(${webhooks.events})`));
     if (!hooks.length) return;

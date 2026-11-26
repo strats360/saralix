@@ -1,14 +1,31 @@
 import { z } from "zod";
 
-/** What an API key can read. Keys are read only; attendance devices have their own keys to send punches. */
-export const API_SCOPES = ["employees:read", "payroll:read", "attendance:read", "leave:read"] as const;
+/** What an API key can do. Most keys only read; Zapier and similar tools also need to manage their webhooks and add employees. */
+export const API_SCOPES = ["employees:read", "payroll:read", "attendance:read", "leave:read", "employees:write", "webhooks:manage"] as const;
 export type ApiScope = (typeof API_SCOPES)[number];
 export const API_SCOPE_LABELS: Record<ApiScope, string> = {
   "employees:read": "Employees and their jobs",
   "payroll:read": "Payroll runs and payslips",
   "attendance:read": "Daily attendance",
   "leave:read": "Leave requests",
+  "employees:write": "Add employees",
+  "webhooks:manage": "Subscribe to events (for Zapier and similar tools)",
 };
+
+/** Add an employee through the API: just enough to start onboarding. Departments and designations are matched by name. */
+export const apiEmployeeSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is needed").max(80),
+  lastName: z.string().trim().max(80).default(""),
+  workEmail: z.email("Enter a valid work email").trim().toLowerCase(),
+  dateOfJoining: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date of joining as YYYY-MM-DD"),
+  mobile: z.string().trim().max(20).nullable().default(null),
+  employeeCode: z.string().trim().max(30).nullable().default(null),
+  department: z.string().trim().max(120).nullable().default(null),
+  designation: z.string().trim().max(120).nullable().default(null),
+  /** Email them a link to fill in their own details. */
+  sendInvite: z.boolean().default(true),
+});
+
 
 export const WEBHOOK_EVENTS = ["employee.created", "employee.updated", "employee.exited", "payroll.approved", "payroll.paid", "leave.approved"] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
@@ -20,6 +37,12 @@ export const WEBHOOK_EVENT_LABELS: Record<WebhookEvent, string> = {
   "payroll.paid": "A payroll run is marked paid",
   "leave.approved": "Leave is approved",
 };
+
+/** Zapier and similar tools subscribe to one event at a time. */
+export const apiHookSchema = z.object({
+  url: z.string().trim().max(500),
+  event: z.enum(WEBHOOK_EVENTS),
+});
 
 export const apiKeySchema = z.object({
   name: z.string().trim().min(1, "Name the key, like the system that uses it").max(60),

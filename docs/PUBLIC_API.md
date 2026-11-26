@@ -46,3 +46,18 @@ What events carry:
 - Employee events: ID, employee code, name, status, and for updates the names of the fields that changed (bank and ID number changes are never named).
 - Payroll events: the run's ID, entity, period, pay date and totals. Never anyone's pay.
 - Leave approved: the request code, employee, dates and days.
+
+
+## For Zapier and similar tools
+
+These need the extra scopes `webhooks:manage` and `employees:write`. The Zapier app in `integrations/zapier` uses them.
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/v1/me` | The company and key name. Use it to test a key. |
+| POST | `/v1/hooks` | Subscribe a URL to one event: `{ "url": "https://...", "event": "employee.created" }`. Returns `{ "id" }`. |
+| DELETE | `/v1/hooks/{id}` | Unsubscribe. A key can only remove subscriptions it made. |
+| GET | `/v1/events/{event}/samples` | Up to three recent examples of the event's data, for setting up a zap. |
+| POST | `/v1/employees` | Add an employee: `firstName`, `lastName`, `workEmail`, `dateOfJoining` (YYYY-MM-DD), and optionally `mobile`, `employeeCode`, `department` and `designation` (matched by name), `sendInvite` (default true). Returns 409 if the work email is already in Saralix. |
+
+Subscriptions deliver the same signed body as any other webhook, so the signature check above applies.

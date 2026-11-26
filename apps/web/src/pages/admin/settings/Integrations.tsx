@@ -88,9 +88,13 @@ export default function Integrations() {
       <Card className="!gap-4">
         <CardHeader
           title="API keys"
-          sub={<>Let another system read your data: a BI dashboard, an ERP or your own scripts. Keys are read only. Send them as <code>Authorization: Bearer sx_…</code> to <code>{keys.data?.endpoint}</code>, for example <code>GET /employees</code>, <code>/payroll/runs</code>, <code>/attendance?from=&amp;to=</code> and <code>/leave?from=&amp;to=</code>.</>}
+          sub={<>Let another system use your data: a BI dashboard, an ERP, Zapier or your own scripts. Keys only do what you tick. Send them as <code>Authorization: Bearer sx_…</code> to <code>{keys.data?.endpoint}</code>, for example <code>GET /employees</code>, <code>/payroll/runs</code>, <code>/attendance?from=&amp;to=</code> and <code>/leave?from=&amp;to=</code>.</>}
           actions={<Button variant="primary" onClick={() => setNewKey({ name: "", scopes: ["employees:read"] })}><Plus size={14} /> New key</Button>}
         />
+        <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px]" style={{ background: "var(--tint-1)" }}>
+          <span className="min-w-0 flex-1"><b className="font-medium">Connecting Zapier?</b> Make a key named Zapier with <i>Employees and their jobs</i>, <i>Add employees</i> and <i>Subscribe to events</i>, then search for Saralix in Zapier and paste the key.</span>
+          <Button size="sm" onClick={() => setNewKey({ name: "Zapier", scopes: ["employees:read", "employees:write", "webhooks:manage"] })}>Make a Zapier key</Button>
+        </div>
         {keys.data?.rows.length ? (
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {keys.data.rows.map((k) => (

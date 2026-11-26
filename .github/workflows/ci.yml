@@ -28,6 +28,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Check the Zapier app
+        working-directory: integrations/zapier
+        run: npm ci --no-audit --no-fund && npm test
       - name: Check the list of sites
         run: node deploy/instances.mjs check && node --test deploy/instances.test.mjs deploy/monitor.test.mjs deploy/restore-drill.test.mjs deploy/provision.test.mjs
       - run: pnpm typecheck

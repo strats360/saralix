@@ -1,15 +1,16 @@
 import { Hono, type Context } from "hono";
 import { alias } from "drizzle-orm/pg-core";
 import { and, asc, desc, eq, gte, inArray, isNull, lte, sql, type SQL } from "drizzle-orm";
-import { apiKeys, attendanceRecords, branches, departments, designations, employees, leaveRequests, leaveTypes, payrollItems, payrollRuns, webhookDeliveries, webhooks } from "@hrms/db";
-import { apiKeySchema, encryptField, randomToken, sha256Hex, webhookSchema, webhookUrlError, type ApiScope } from "@hrms/shared";
+import { apiKeys, attendanceRecords, branches, departments, designations, employees, leaveRequests, leaveTypes, payrollItems, payrollRuns, tenants, webhookDeliveries, webhooks } from "@hrms/db";
+import { apiEmployeeSchema, apiHookSchema, apiKeySchema, encryptField, WEBHOOK_EVENTS, randomToken, sha256Hex, webhookSchema, webhookUrlError, type ApiScope } from "@hrms/shared";
 import { z } from "zod";
 import type { AppEnv } from "../env";
 import { requirePerm } from "../lib/context";
 import { v } from "../lib/validate";
 import { ApiError, badRequest, notFound } from "../lib/errors";
 import { audit } from "../lib/audit";
-import { allowLocalHooks, attemptDelivery } from "../services/webhooks";
+import { allowLocalHooks, attemptDelivery, emitEvent } from "../services/webhooks";
+import { linkExistingLogin, nextEmployeeCode, sendOnboardingInvite } from "../services/employees";
 
 const tid = (c: Context<AppEnv>) => c.get("tenant").tenantId;
 
@@ -83,7 +84,7 @@ integrationRoutes.patch("/webhooks/:id", admin, v("json", webhookSchema.partial(
 });
 
 integrationRoutes.delete("/webhooks/:id", admin, async (c) => {
-  const [h] = await c.get("db").delete(webhooks).where(and(eq(webhooks.id, c.req.param("id")), eq(webhooks.tenantId, tid(c)))).returning();
+  const [h] = await c.get("db").delete(webhooks).where(and(eq(webhooks.id, c.req.param("id") ?? ""), eq(webhooks.tenantId, tid(c)))).returning();
   if (!h) throw notFound("Webhook");
   await audit(c, { action: "integrations.webhook_delete", entity: "webhook", entityId: h.id, summary: `Removed the webhook to ${new URL(h.url).host}` });
   return c.json({ ok: true });
@@ -119,7 +120,7 @@ integrationRoutes.post("/deliveries/:id/retry", admin, async (c) => {
 });
 
 // ---------- the public API: /api/v1, read only, with an API key ----------
-type V1Env = AppEnv & { Variables: AppEnv["Variables"] & { apiTenant: string; apiScopes: string[] } };
+type V1Env = AppEnv & { Variables: AppEnv["Variables"] & { apiTenant: string; apiScopes: string[]; apiKeyId: string; apiKeyName: string } };
 export const v1Routes = new Hono<V1Env>();
 
 v1Routes.use("*", async (c, next) => {
@@ -130,12 +131,14 @@ v1Routes.use("*", async (c, next) => {
   if (!k || k.revokedAt || k.keyHash !== (await sha256Hex(m[2]!))) throw new ApiError(401, "Unknown or revoked API key", "unauthorized");
   c.set("apiTenant", k.tenantId);
   c.set("apiScopes", k.scopes);
+  c.set("apiKeyId", k.id);
+  c.set("apiKeyName", k.name);
   // note use at most once a minute, to keep writes down
   if (!k.lastUsedAt || Date.now() - k.lastUsedAt.getTime() > 60_000) await db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, k.id));
   await next();
 });
 const scope = (s: ApiScope) => async (c: Context<V1Env>, next: () => Promise<void>) => {
-  if (!c.get("apiScopes").includes(s)) throw new ApiError(403, `This key can't read that. It needs the ${s} scope.`, "forbidden");
+  if (!c.get("apiScopes").includes(s)) throw new ApiError(403, `This key can't do that. It needs the ${s} scope.`, "forbidden");
   await next();
 };
 const page = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(200).default(100) });
@@ -236,4 +239,78 @@ v1Routes.get("/leave", scope("leave:read"), v("query", range), async (c) => {
     .where(and(eq(leaveRequests.tenantId, c.get("apiTenant")), lte(leaveRequests.startDate, q.to), gte(leaveRequests.endDate, q.from)))
     .orderBy(asc(leaveRequests.startDate));
   return c.json({ data: rows });
+});
+
+/* ---------------- for Zapier and similar tools ---------------- */
+
+/** Who the key belongs to: Zapier calls this to test the connection and label the account. */
+v1Routes.get("/me", async (c) => {
+  const [t] = await c.get("db").select({ id: tenants.id, name: tenants.name, code: tenants.code }).from(tenants).where(eq(tenants.id, c.get("apiTenant")));
+  return c.json({ company: t, key: { name: c.get("apiKeyName"), scopes: c.get("apiScopes") } });
+});
+
+/** REST hook subscribe: one URL, one event. The delivery is the event's data, signed like any webhook. */
+v1Routes.post("/hooks", scope("webhooks:manage"), v("json", apiHookSchema), async (c) => {
+  const b = c.req.valid("json");
+  const err = webhookUrlError(b.url, { allowLocal: allowLocalHooks(c.env) });
+  if (err) throw badRequest(err);
+  const secret = `whsec_${randomToken(24)}`;
+  const [h] = await c.get("db").insert(webhooks).values({ tenantId: c.get("apiTenant"), url: b.url, events: [b.event], secretEnc: await encryptField(secret, c.env.ENCRYPTION_KEY!), secretHint: secret.slice(-4), createdBy: `api_key:${c.get("apiKeyId")}` }).returning();
+  return c.json({ id: h!.id, event: b.event }, 201);
+});
+
+v1Routes.delete("/hooks/:id", scope("webhooks:manage"), async (c) => {
+  // only hooks this key made, so one integration can't remove another's
+  const [h] = await c.get("db").delete(webhooks).where(and(eq(webhooks.id, c.req.param("id") ?? ""), eq(webhooks.tenantId, c.get("apiTenant")), eq(webhooks.createdBy, `api_key:${c.get("apiKeyId")}`))).returning();
+  if (!h) throw notFound("Subscription");
+  return c.json({ ok: true });
+});
+
+/** Recent examples of an event, newest first: what Zapier shows while someone sets up a zap. */
+v1Routes.get("/events/:event/samples", scope("webhooks:manage"), async (c) => {
+  const event = c.req.param("event") ?? "";
+  if (!(WEBHOOK_EVENTS as readonly string[]).includes(event)) throw notFound("Event");
+  const db = c.get("db");
+  const sent = await db.select({ id: webhookDeliveries.id, payload: webhookDeliveries.payload, at: webhookDeliveries.createdAt }).from(webhookDeliveries).where(and(eq(webhookDeliveries.tenantId, c.get("apiTenant")), eq(webhookDeliveries.event, event))).orderBy(desc(webhookDeliveries.createdAt)).limit(3);
+  if (sent.length) return c.json(sent.map((s) => s.payload));
+  // nothing sent yet: build examples from what's in Saralix
+  const tid = c.get("apiTenant");
+  if (event.startsWith("employee.")) {
+    const rows = await db.select({ id: employees.id, employeeCode: employees.employeeCode, fullName: employees.fullName, workEmail: employees.workEmail, status: employees.status, dateOfJoining: employees.dateOfJoining, lastWorkingDay: employees.lastWorkingDay }).from(employees).where(eq(employees.tenantId, tid)).orderBy(desc(employees.createdAt)).limit(3);
+    return c.json(rows.map((r) => (event === "employee.exited" ? { id: r.id, employeeCode: r.employeeCode, fullName: r.fullName, type: "resignation", lastWorkingDay: r.lastWorkingDay ?? r.dateOfJoining } : event === "employee.updated" ? { id: r.id, employeeCode: r.employeeCode, fullName: r.fullName, status: r.status, fields: ["designationId"] } : r)));
+  }
+  if (event === "leave.approved") {
+    const rows = await db.select({ id: leaveRequests.id, code: leaveRequests.code, employeeId: leaveRequests.employeeId, startDate: leaveRequests.startDate, endDate: leaveRequests.endDate, days: leaveRequests.days, halfDay: leaveRequests.halfDay }).from(leaveRequests).where(and(eq(leaveRequests.tenantId, tid), eq(leaveRequests.status, "approved"))).orderBy(desc(leaveRequests.createdAt)).limit(3);
+    return c.json(rows.map((r) => ({ ...r, days: Number(r.days) })));
+  }
+  const runs = await db.select().from(payrollRuns).where(eq(payrollRuns.tenantId, tid)).orderBy(desc(payrollRuns.periodStart)).limit(3);
+  return c.json(runs.map((r) => ({ id: r.id, month: r.month, periodStart: r.periodStart, periodEnd: r.periodEnd, payDate: r.payDate, totals: r.totals })));
+});
+
+/** Add an employee: enough to start onboarding. They get an invite to fill in the rest. */
+v1Routes.post("/employees", scope("employees:write"), v("json", apiEmployeeSchema), async (c) => {
+  const b = c.req.valid("json");
+  const db = c.get("db");
+  const tid = c.get("apiTenant");
+  const [dup] = await db.select({ id: employees.id }).from(employees).where(and(eq(employees.tenantId, tid), sql`lower(${employees.workEmail}) = ${b.workEmail}`));
+  if (dup) throw new ApiError(409, "Someone with that work email is already in Saralix", "conflict");
+  const byName = async (table: typeof departments | typeof designations, name: string | null, what: string) => {
+    if (!name) return null;
+    const [r] = await db.select({ id: table.id }).from(table).where(and(eq(table.tenantId, tid), sql`lower(${table.name}) = ${name.toLowerCase()}`));
+    if (!r) throw badRequest(`There's no ${what} called "${name}" in Saralix. Use one that exists, or leave it out.`);
+    return r.id;
+  };
+  const departmentId = await byName(departments, b.department, "department");
+  const designationId = await byName(designations, b.designation, "designation");
+  const code = b.employeeCode || (await nextEmployeeCode(db, tid));
+  const fullName = [b.firstName, b.lastName].filter(Boolean).join(" ");
+  const status = b.sendInvite ? "onboarding" : "probation";
+  const [emp] = await db.insert(employees).values({ tenantId: tid, employeeCode: code, firstName: b.firstName, lastName: b.lastName || null, fullName, workEmail: b.workEmail, phone: b.mobile, dateOfJoining: b.dateOfJoining, departmentId, designationId, status }).returning();
+  // the invite and audit helpers work in a company's context
+  (c as unknown as Context<AppEnv>).set("tenant", { tenantId: tid, membershipId: `api_key:${c.get("apiKeyId")}`, roleId: null, roleName: `API key ${c.get("apiKeyName")}`, permissions: {}, employeeId: null, plan: "", features: {}, kycStatus: "approved", readOnly: null });
+  const linked = await linkExistingLogin(db, tid, emp!.id, emp!.workEmail);
+  if (b.sendInvite && !linked) await sendOnboardingInvite(c as unknown as Context<AppEnv>, emp!.id);
+  await emitEvent(c as unknown as Context<AppEnv>, "employee.created", { id: emp!.id, employeeCode: code, fullName, workEmail: emp!.workEmail, status, dateOfJoining: emp!.dateOfJoining }, tid);
+  await audit(c as unknown as Context<AppEnv>, { tenantId: tid, action: "employee.create", entity: "employee", entityId: emp!.id, summary: `Added ${fullName} (${code}) through the API key ${c.get("apiKeyName")}` });
+  return c.json({ id: emp!.id, employeeCode: code, fullName, workEmail: emp!.workEmail, status, invited: b.sendInvite && !linked }, 201);
 });

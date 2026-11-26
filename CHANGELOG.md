@@ -10,6 +10,8 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 - Paid add-ons. The platform team sets each add-on's name, description and price (per employee or flat, a month) under Plans & pricing, and whether it's on sale. Companies switch add-ons on and off under Settings → Billing, with a monthly estimate for their headcount; they're free during the trial. Each add-on that was on during a month is its own line on that month's invoice, with GST. A feature flag on the same key can give one free to a company for a pilot.
 - The first four add-ons are in the catalogue (AI assistant, Sign in and work tools, Face attendance kiosk, Forms and workflows), not on sale yet. Each goes on sale when its feature ships.
+- Zapier. A Zapier app in `integrations/zapier` with instant triggers (new employee, updated employee, exit completed, leave approved, payroll approved, payroll paid) and an Add Employee action. See its README to publish it.
+- Public API additions for Zapier and similar tools: `GET /v1/me`, subscribe and unsubscribe webhooks (`/v1/hooks`), recent event samples, and `POST /v1/employees` to add an employee who then gets the onboarding email. Two new key scopes: "Add employees" and "Subscribe to events".
 
 ### Planned
 
