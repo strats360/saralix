@@ -386,6 +386,13 @@
       "when": 1795686378641,
       "tag": "0054_engagement",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795687772966,
+      "tag": "0055_company_kyc",
+      "breakpoints": true
     }
   ]
 }

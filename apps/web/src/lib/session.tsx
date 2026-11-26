@@ -11,6 +11,8 @@ export interface Membership {
   tenantCode: string;
   tenantStatus: string;
   setupComplete: boolean;
+  /** Company KYC: anything but approved limits the company to setup and KYC. */
+  kycStatus?: string;
   roleId: string | null;
   roleName: string | null;
   permissions: PermissionMatrix;
@@ -61,6 +63,7 @@ function supportMembership(s: SupportSession): Membership {
     tenantCode: s.tenantCode,
     tenantStatus: s.tenantStatus,
     setupComplete: true,
+    kycStatus: "approved",
     roleId: "support",
     roleName: "Support (read-only)",
     permissions: SUPPORT_VIEW,

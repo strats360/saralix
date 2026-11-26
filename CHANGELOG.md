@@ -13,6 +13,13 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 - Results with averages, the eNPS score, and bars for each answer, by department. HR can share the results with staff once a survey closes.
 - Kudos: thank up to 10 colleagues at once for one of your company values. Everyone sees it on the kudos wall, the people thanked get an email, and anyone can cheer it. HR sets the values, can switch kudos off, sees who gives and gets the most, and can hide a post.
 - Two new email switches: "Surveys and polls" and "Kudos for you".
+- Company KYC. A company that signs up now verifies itself before it can add employees or run payroll: it sends its type of business, PAN, GSTIN (or why it has none), CIN or LLPIN, registered address and authorised signatory, and uploads the documents its type needs. We check the PAN matches the type of business and that the GSTIN contains the PAN. Until it's approved the company sees only its dashboard, KYC, company settings, admins, billing and support.
+- A Company KYC queue in the platform console. The team opens each document, then approves, asks for more with a note, or rejects. The company's admins get an email either way, and every step is kept in the history and the audit log.
+- "Verify your company" is now the first step on the Get started card.
+
+### Changed
+
+- Companies that already exist, the demo and companies the platform team creates count as verified, so nothing changes for them.
 
 ### Planned
 

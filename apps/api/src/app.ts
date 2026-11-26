@@ -3,6 +3,7 @@ import { setLocalDefaults } from "@hrms/shared";
 import { essHelpdeskRoutes, helpdeskRoutes } from "./routes/helpdesk";
 import { announcementRoutes, essAnnouncementRoutes } from "./routes/announcements";
 import { engagementRoutes, essEngagementRoutes } from "./routes/engagement";
+import { kycRoutes, platformKycRoutes } from "./routes/kyc";
 import { essTimesheetRoutes, timesheetRoutes } from "./routes/timesheets";
 import { assetRoutes, essAssetRoutes } from "./routes/assets";
 import { careersRoutes, myInterviewRoutes, recruitmentRoutes } from "./routes/recruitment";
@@ -12,7 +13,7 @@ import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import type { AppEnv } from "./env";
 import { onError } from "./lib/errors";
-import { loadSession, readOnlyGuard, requireAdmin, requireAuth, requireFeature, requireTenant, services } from "./lib/context";
+import { kycGuard, loadSession, readOnlyGuard, requireAdmin, requireAuth, requireFeature, requireTenant, services } from "./lib/context";
 import { publicRoutes } from "./routes/public";
 import { cashfreeWebhook, tenantPayRoutes } from "./routes/cashfree";
 import { meRoutes } from "./routes/me";
@@ -162,11 +163,12 @@ export function buildApp() {
   api.route("/platform/flags", flagRoutes);
   api.route("/platform/statutory", statutoryRoutes);
   api.route("/platform/support", platformSupportRoutes);
+  api.route("/platform/kyc", platformKycRoutes);
   api.route("/platform", platformRoutes);
 
   // Tenant-scoped routes
   const t = new Hono<AppEnv>();
-  t.use("*", requireAuth, requireTenant, readOnlyGuard);
+  t.use("*", requireAuth, requireTenant, readOnlyGuard, kycGuard);
   // plan / feature-flag gates (before the routes they guard)
   t.use("/ess/tax/*", requireFeature("module.tds"));
   t.use("/ess/reviews/*", requireFeature("module.performance"));
@@ -226,6 +228,7 @@ export function buildApp() {
   t.route("/admin/engagement", engagementRoutes);
   t.route("/admin/helpdesk", helpdeskRoutes);
   t.use("/admin/*", requireAdmin);
+  t.route("/admin/kyc", kycRoutes);
   t.route("/admin/dashboard", dashboardRoutes);
   t.route("/admin/org/notifications", orgNotificationRoutes);
   t.route("/admin/org", orgRoutes);

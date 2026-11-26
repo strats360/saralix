@@ -51,7 +51,7 @@ describe("company sign-up", () => {
     c.tenantId = co.body.tenantId;
     const after = (await c.get("/me")).body;
     expect(after.canCreateCompany).toBe(false);
-    expect(after.memberships[0]).toMatchObject({ tenantName: "Acme Signup Pvt Ltd", roleName: "Super admin" });
+    expect(after.memberships[0]).toMatchObject({ tenantName: "Acme Signup Pvt Ltd", roleName: "Super admin", kycStatus: "draft" });
     expect((await anon.post("/public/signup", { name: "Again", email, password })).status).toBe(409);
   });
 
@@ -59,9 +59,10 @@ describe("company sign-up", () => {
     const c = await login(email, password);
     c.tenantId = (await c.get("/me")).body.memberships[0].tenantId;
     const s = (await c.get("/admin/dashboard/setup")).body;
-    expect(s).toMatchObject({ requiredDone: 0, requiredTotal: 5, complete: false, hidden: false });
-    expect(s.items.map((i: any) => i.key)).toEqual(["company", "statutory", "payroll", "employees", "salaries", "admins", "bank", "leave", "holidays", "security"]);
+    expect(s).toMatchObject({ requiredDone: 0, requiredTotal: 6, complete: false, hidden: false });
+    expect(s.items.map((i: any) => i.key)).toEqual(["kyc", "company", "statutory", "payroll", "employees", "salaries", "admins", "bank", "leave", "holidays", "security"]);
     expect((await c.post("/admin/dashboard/setup/company", { done: true })).status).toBe(400);
+    expect((await c.post("/admin/dashboard/setup/kyc", { done: true })).status).toBe(400);
     expect((await c.post("/admin/dashboard/setup/holidays", { done: true })).status).toBe(200);
     expect((await c.patch("/admin/org/tenant", { pan: "AAACA1234Q", registeredAddress: "1 Ring Road, Surat" })).status).toBe(200);
     const after = (await c.get("/admin/dashboard/setup")).body;

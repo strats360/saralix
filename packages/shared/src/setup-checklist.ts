@@ -3,6 +3,7 @@
  * blocks everything. Required steps are needed before the first payroll; the rest can wait.
  */
 export const SETUP_ITEMS = [
+  { key: "kyc", required: true, title: "Verify your company", detail: "Send your PAN, registration and address proof. We check it within one working day, then the rest of Saralix opens up", to: "/kyc", manual: false },
   { key: "company", required: true, title: "Company details", detail: "PAN, TAN, GSTIN and registered address, for payslips, challans and Form 16", to: "/setup?step=1", manual: false },
   { key: "statutory", required: true, title: "PF, ESI, PT and LWF", detail: "Turn on the schemes you're registered for and add their numbers", to: "/setup?step=2", manual: false },
   { key: "payroll", required: true, title: "Branches and pay cycle", detail: "Your offices, pay day and how paid days are counted", to: "/setup?step=3", manual: false },

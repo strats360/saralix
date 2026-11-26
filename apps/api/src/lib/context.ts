@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 import { createDb, memberships, platformStaff, roles, tenants } from "@hrms/db";
-import { can, MODULES, readTwoFactorPolicy, twoFactorRequired, type Action, type Module, type PermissionMatrix } from "@hrms/shared";
+import { can, kycAllows, MODULES, readTwoFactorPolicy, twoFactorRequired, type Action, type Module, type PermissionMatrix } from "@hrms/shared";
 import type { AppEnv, Env } from "../env";
 import { createAuth } from "./auth";
 import { CloudflareMailer, ConsoleMailer, ResendMailer, SkipDemoMailer, UnconfiguredMailer, type Mailer } from "./email";
@@ -71,7 +71,7 @@ export const requireTenant = createMiddleware<AppEnv>(async (c, next) => {
   const wanted = c.req.header("x-tenant-id");
 
   const rows = await db
-    .select({ m: memberships, role: roles, tenantStatus: tenants.status, plan: tenants.plan, settings: tenants.settings })
+    .select({ m: memberships, role: roles, tenantStatus: tenants.status, plan: tenants.plan, settings: tenants.settings, kycStatus: tenants.kycStatus })
     .from(memberships)
     .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
     .leftJoin(roles, eq(roles.id, memberships.roleId))
@@ -83,7 +83,7 @@ export const requireTenant = createMiddleware<AppEnv>(async (c, next) => {
     const [staff] = await db.select().from(platformStaff).where(and(eq(platformStaff.userId, session.userId), eq(platformStaff.status, "active")));
     const access = staff ? (await activeAccess(db, session.userId, wanted)).find((a) => OPEN_STATUSES.includes(a.ticketStatus)) : undefined;
     if (access) {
-      const [t] = await db.select({ plan: tenants.plan, status: tenants.status }).from(tenants).where(eq(tenants.id, wanted));
+      const [t] = await db.select({ plan: tenants.plan, status: tenants.status, kycStatus: tenants.kycStatus }).from(tenants).where(eq(tenants.id, wanted));
       if (!t) throw forbidden("You don't have access to this company");
       c.set("tenant", {
         tenantId: wanted,
@@ -94,6 +94,7 @@ export const requireTenant = createMiddleware<AppEnv>(async (c, next) => {
         employeeId: null,
         plan: t.plan,
         features: await featuresFor(db, { id: wanted, plan: t.plan }),
+        kycStatus: t.kycStatus,
         readOnly: { ticketId: access.access.ticketId, accessId: access.access.id, expiresAt: access.access.expiresAt.toISOString() },
       });
       return next();
@@ -116,6 +117,7 @@ export const requireTenant = createMiddleware<AppEnv>(async (c, next) => {
     employeeId: row.m.employeeId,
     plan: row.plan,
     features: await featuresFor(db, { id: row.m.tenantId, plan: row.plan }),
+    kycStatus: row.kycStatus,
     readOnly: null,
   });
   await next();
@@ -134,6 +136,16 @@ export const readOnlyGuard = createMiddleware<AppEnv>(async (c, next) => {
     const downloads = /\.(csv|xlsx|txt)$|\/file$|\/receipts?\/|\/documents?\/|\/files\/|\/attachments\/|\/report$|export|bank-file/;
     const reportFile = /\/admin\/reports\/[^/]+$/.test(c.req.path) && ["csv", "xlsx"].includes(c.req.query("format") ?? "");
     if (downloads.test(c.req.path) || reportFile) throw forbidden("Downloads are turned off in the read-only support view");
+  }
+  await next();
+});
+
+/** Until a company's KYC is approved it can only set itself up and send its KYC. */
+export const kycGuard = createMiddleware<AppEnv>(async (c, next) => {
+  const t = c.get("tenant");
+  if (t.kycStatus !== "approved" && !t.readOnly) {
+    const path = c.req.path.replace(/^\/api/, "");
+    if (!kycAllows(path)) throw new ApiError(403, t.kycStatus === "rejected" ? "Your company's verification wasn't approved. Contact Saralix support." : "Verify your company first. Send your KYC from the dashboard; we'll check it within one working day.", "kyc_required");
   }
   await next();
 });

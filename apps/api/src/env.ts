@@ -60,6 +60,8 @@ export interface TenantContext {
   plan: string;
   /** Feature flags evaluated for this tenant. */
   features: Record<string, boolean>;
+  /** Company KYC status; anything but approved limits the company to setup and KYC. */
+  kycStatus: string;
   /** Platform support viewing the tenant read-only (no membership). */
   readOnly?: { ticketId: string; accessId: string; expiresAt: string } | null;
 }

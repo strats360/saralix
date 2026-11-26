@@ -35,6 +35,8 @@ export const tenants = pgTable(
     paymentMethod: text("payment_method"),
     setupStep: text("setup_step").notNull().default("0"),
     setupCompletedAt: timestamp("setup_completed_at", { withTimezone: true }),
+    /** Company KYC: draft | submitted | needs_info | approved | rejected. Self sign-ups start at draft. */
+    kycStatus: text("kyc_status").notNull().default("approved"),
     settings: jsonb("settings").$type<Partial<TenantSettings>>().notNull().default({}),
     statutory: jsonb("statutory").$type<TenantStatutory>().notNull().default({}),
     ...timestamps,

@@ -27,6 +27,7 @@ meRoutes.get("/", async (c) => {
       plan: tenants.plan,
       settings: tenants.settings,
       setupCompletedAt: tenants.setupCompletedAt,
+      kycStatus: tenants.kycStatus,
       roleId: roles.id,
       roleName: roles.name,
       permissions: roles.permissions,
@@ -75,6 +76,7 @@ meRoutes.get("/", async (c) => {
         tenantCode: r.tenantCode,
         tenantStatus: r.tenantStatus,
         setupComplete: !!r.setupCompletedAt,
+        kycStatus: r.kycStatus,
         roleId: r.roleId,
         roleName: r.roleName,
         permissions: r.permissions ?? {},
@@ -106,7 +108,7 @@ meRoutes.post("/company", v("json", companyCreateSchema), async (c) => {
   const { tenant } = await provisionTenant(db, { name: b.companyName, legalName: b.legalName ?? b.companyName, state: b.state, ownerUserId: s.userId });
   await db
     .update(tenants)
-    .set({ contactEmail: s.email, settings: sql`${tenants.settings} || ${JSON.stringify({ signup: { role: b.role ?? null, companySize: b.companySize ?? null } })}::jsonb` })
+    .set({ contactEmail: s.email, kycStatus: "draft", settings: sql`${tenants.settings} || ${JSON.stringify({ signup: { role: b.role ?? null, companySize: b.companySize ?? null } })}::jsonb` })
     .where(eq(tenants.id, tenant.id));
   await audit(c, { tenantId: tenant.id, action: "tenant.signup", entity: "tenant", entityId: tenant.id, summary: `${b.companyName} signed up` });
   return c.json({ tenantId: tenant.id }, 201);

@@ -100,6 +100,8 @@ const router = createBrowserRouter([
             { path: "settings", element: L(() => import("@/pages/platform/Settings")) },
             { path: "flags", element: L(() => import("@/pages/platform/Flags")) },
             { path: "statutory", element: L(() => import("@/pages/platform/Statutory")) },
+            { path: "kyc", element: L(() => import("@/pages/platform/Kyc")) },
+            { path: "kyc/:tenantId", element: L(() => import("@/pages/platform/Kyc").then((m) => ({ default: m.KycReview }))) },
             { path: "tickets", element: L(() => import("@/pages/platform/Tickets")) },
             { path: "tickets/:id", element: L(() => import("@/pages/platform/TicketDetail")) },
             { path: "*", element: L(() => import("@/pages/Soon")) },
@@ -226,6 +228,7 @@ const router = createBrowserRouter([
             },
             { path: "reports", element: L(() => import("@/pages/admin/reports/Reports")) },
             { path: "support", element: L(() => import("@/pages/admin/support/Support")) },
+            { path: "kyc", element: L(() => import("@/pages/admin/kyc/Kyc")) },
             { path: "payments/batches/:id", element: L(() => import("@/pages/admin/payments/BatchDetail")) },
             { path: "payroll/run/:runId", element: L(() => import("@/pages/admin/payroll/RunWizard")) },
             {

@@ -4,7 +4,8 @@ import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Cake, Check, Download, UserPlus, X } from "lucide-react";
-import { fmtDate } from "@hrms/shared";
+import { fmtDate, type KycStatus } from "@hrms/shared";
+import { KycStatusCard, kycLocked } from "@/components/kyc/KycStatus";
 import { api, download } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,25 @@ function longDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+/** An unverified company sees its KYC and the setup checklist, nothing else yet. */
 export default function DashboardPage() {
+  const { tenant } = useSession();
+  return kycLocked(tenant) ? <LockedHome /> : <FullDashboard />;
+}
+
+function LockedHome() {
+  const { tenant, me } = useSession();
+  const kyc = useQuery({ queryKey: ["kyc"], queryFn: () => api.get<{ status: KycStatus; reviewNote: string | null }>("/admin/kyc") });
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title={`Welcome${me ? `, ${me.user.name.split(" ")[0]}` : ""}`} sub={`Let's get ${tenant?.tenantName ?? "your company"} ready.`} />
+      <KycStatusCard status={kyc.data?.status ?? (tenant?.kycStatus as KycStatus)} note={kyc.data?.reviewNote} compact />
+      <SetupChecklist />
+    </div>
+  );
+}
+
+function FullDashboard() {
   const { can, tenant } = useSession();
   const nav = useNavigate();
   const qc = useQueryClient();

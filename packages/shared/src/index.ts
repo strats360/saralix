@@ -30,6 +30,7 @@ export * from "./assets";
 export * from "./timesheets";
 export * from "./announcements";
 export * from "./engagement";
+export * from "./kyc";
 export * from "./helpdesk";
 export * from "./countries";
 export * from "./formula";

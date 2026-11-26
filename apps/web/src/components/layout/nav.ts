@@ -86,6 +86,7 @@ export const PLATFORM_NAV: NavGroup[] = [
       { to: "/platform", label: "Overview", icon: Home },
       { to: "/platform/tenants", label: "Tenants", icon: Users },
       { to: "/platform/tickets", label: "Customer tickets", icon: LifeBuoy },
+      { to: "/platform/kyc", label: "Company KYC", icon: ShieldCheck },
     ],
   },
   {

@@ -8,6 +8,13 @@ import { useSession } from "@/lib/session";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { ADMIN_NAV, type NavGroup } from "./nav";
+import { ShieldCheck } from "lucide-react";
+import type { KycStatus } from "@hrms/shared";
+import { KycStatusCard, kycLocked } from "@/components/kyc/KycStatus";
+
+/** Pages an unverified company can open: its dashboard, KYC, company settings, admins, billing and support. */
+const KYC_OPEN = ["/", "/kyc", "/settings", "/settings/structure", "/settings/entities", "/settings/access", "/settings/billing", "/settings/audit", "/settings/notifications", "/support"];
+
 
 interface DashboardBadges {
   pendingLeaveCount: number;
@@ -42,6 +49,7 @@ function useCollapsed(key: string) {
 
 /** Breadcrumb: the nav item that matches best, then the next path segment. */
 export function crumbFor(path: string, groups: NavGroup[]) {
+  if (path === "/kyc") return t("Company KYC");
   const items = groups.flatMap((g) => g.items);
   const base = items.filter((i) => path === i.to || (i.to !== "/" && path.startsWith(i.to + "/"))).sort((x, y) => y.to.length - x.to.length)[0] ?? items[0];
   const rest = base ? path.slice(base.to.length).split("/").filter(Boolean) : [];
@@ -63,13 +71,20 @@ export function AdminLayout() {
   const badges = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => api.get<DashboardBadges>("/admin/dashboard"),
-    enabled: !!tenant?.roleId,
+    enabled: !!tenant?.roleId && !kycLocked(tenant),
     staleTime: 30_000,
   });
+  const locked = kycLocked(tenant);
+  const kyc = useQuery({ queryKey: ["kyc"], queryFn: () => api.get<{ status: KycStatus; reviewNote: string | null }>("/admin/kyc"), enabled: locked && can("settings", "edit") });
 
   if (!tenant?.roleId) return <Navigate to={isEmployee ? "/me" : "/login"} replace />;
 
-  const groups = ADMIN_NAV.map((g) => ({ ...g, items: g.items.filter((i) => (!i.perm || can(i.perm[0], i.perm[1])) && (!i.feature || has(i.feature))) })).filter((g) => g.items.length);
+  const visible = ADMIN_NAV.map((g) => ({ ...g, items: g.items.filter((i) => (!i.perm || can(i.perm[0], i.perm[1])) && (!i.feature || has(i.feature))) })).filter((g) => g.items.length);
+  // until KYC is approved the menu is just the dashboard, KYC, settings and support
+  const groups = locked
+    ? [{ key: "overview", label: "Overview", items: [...visible.flatMap((g) => g.items).filter((i) => i.to === "/"), { to: "/kyc", label: "Company KYC", icon: ShieldCheck }] }, { key: "company", label: "Company", items: visible.flatMap((g) => g.items).filter((i) => i.to === "/settings" || i.to === "/support") }].filter((g) => g.items.length)
+    : visible;
+  const open = !locked || KYC_OPEN.includes(loc.pathname) || loc.pathname.startsWith("/support/");
   const b = badges.data;
   const sidebarProps = {
     groups,
@@ -120,7 +135,7 @@ export function AdminLayout() {
               ) : null}
             </div>
           ) : null}
-          <Outlet />
+          {open ? <Outlet /> : <KycStatusCard status={kyc.data?.status ?? (tenant.kycStatus as KycStatus)} note={kyc.data?.reviewNote} />}
         </main>
       </div>
     </div>

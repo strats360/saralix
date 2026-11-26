@@ -132,6 +132,7 @@ dashboardRoutes.get("/setup", requirePerm("settings", "configure"), async (c) =>
   const step = Number(t?.setupStep ?? 0);
   const statutory = (t?.statutory ?? {}) as Record<string, { enabled?: boolean; registration?: string | null }>;
   const auto: Record<SetupItemKey, boolean> = {
+    kyc: t?.kycStatus === "approved",
     company: !!(t?.pan && t?.registeredAddress),
     statutory: step >= 3 || Object.values(statutory).some((x) => x?.registration),
     // a new company has default pay settings, so it's done once there's a branch or the step was saved

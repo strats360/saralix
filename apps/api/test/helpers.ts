@@ -1,3 +1,4 @@
+import postgres from "postgres";
 import { buildApp } from "../src/app";
 import { getDevMailer } from "../src/lib/context";
 import type { Env } from "../src/env";
@@ -73,7 +74,8 @@ export function lastEmailTo(to: string) {
 }
 
 /** The full self-serve sign-up: work email, the link from the email, sign in, then the company. */
-export async function signUpCompany(input: { name: string; email: string; password: string; companyName: string; state?: string }) {
+/** Companies start unverified; most tests want one that has passed KYC, so that is the default. */
+export async function signUpCompany(input: { name: string; email: string; password: string; companyName: string; state?: string; verified?: boolean }) {
   const anon = new Client();
   const r = await anon.post("/public/signup", { name: input.name, email: input.email, password: input.password });
   if (r.status !== 201) throw new Error(`signup failed: ${r.status} ${JSON.stringify(r.body)}`);
@@ -86,5 +88,10 @@ export async function signUpCompany(input: { name: string; email: string; passwo
   const co = await c.post("/me/company", { companyName: input.companyName, state: input.state ?? "Gujarat" });
   if (co.status !== 201) throw new Error(`company failed: ${co.status} ${JSON.stringify(co.body)}`);
   c.tenantId = co.body.tenantId;
+  if (input.verified !== false) {
+    const sql = postgres(env.DATABASE_URL!, { max: 1, onnotice: () => {} });
+    await sql`update tenants set kyc_status = 'approved' where id = ${c.tenantId!}`;
+    await sql.end();
+  }
   return c;
 }
