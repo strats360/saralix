@@ -36,6 +36,7 @@ export * from "./feedback";
 export * from "./one-on-ones";
 export * from "./addons";
 export * from "./receipts";
+export * from "./travel";
 export * from "./helpdesk";
 export * from "./countries";
 export * from "./formula";

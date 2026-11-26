@@ -10,6 +10,7 @@ import { Empty, ErrorState, Loading } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
 import { monthLabel } from "@/components/payroll/Payslip";
 import { ClaimDetailDialog, ClaimDialog, ClaimStatusTag, limitText } from "@/components/reimbursements/shared";
+import { MyTrips } from "@/components/travel/Travel";
 
 export default function EssClaims() {
   const q = useQuery({ queryKey: ["claims", "mine"], queryFn: () => api.get<MyClaims>("/ess/claims") });
@@ -103,6 +104,7 @@ export default function EssClaims() {
         </div>
       </Card>
 
+      <MyTrips />
       <ClaimDialog open={creating} onClose={() => setCreating(false)} categories={d.categories} endpoint="/ess/claims" />
       <ClaimDetailDialog id={open} onClose={() => setOpen(null)} mode="ess" />
     </>

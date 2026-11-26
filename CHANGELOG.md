@@ -13,6 +13,7 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 - Zapier. A Zapier app in `integrations/zapier` with instant triggers (new employee, updated employee, exit completed, leave approved, payroll approved, payroll paid) and an Add Employee action. See its README to publish it.
 - Public API additions for Zapier and similar tools: `GET /v1/me`, subscribe and unsubscribe webhooks (`/v1/hooks`), recent event samples, and `POST /v1/employees` to add an employee who then gets the onboarding email. Two new key scopes: "Add employees" and "Subscribe to events".
 - Read a receipt. When an employee attaches a receipt photo to a claim, "Fill in from the receipt" reads the amount, date, seller, and the GSTIN and GST where the category collects them. It runs in the browser (Tesseract, served from our own site), so the photo never leaves the device, and the person checks the values before submitting.
+- Travel requests. Employees ask before a trip (where, when, how, estimated cost) under Claims, with an advance if they need one. The manager approves; finance also approves trips with an advance and records when it's paid. Claims can be linked to an approved trip. Once the trip is over and its claims are decided, finance settles it: the claims are paid with salary as usual and the advance becomes a one month recovery in the next payroll, so the person nets exactly what they spent. Admins see trips under Reimbursements → Travel.
 
 ### Planned
 

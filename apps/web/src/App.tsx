@@ -215,6 +215,7 @@ const router = createBrowserRouter([
               children: [
                 { index: true, element: L(() => import("@/pages/admin/reimbursements/Queue")) },
                 { path: "history", element: L(() => import("@/pages/admin/reimbursements/History")) },
+                { path: "travel", element: L(() => import("@/components/travel/Travel").then((m) => ({ default: m.AdminTravel }))) },
                 { path: "categories", element: L(() => import("@/pages/admin/reimbursements/Categories")) },
               ],
             },

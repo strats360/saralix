@@ -43,6 +43,7 @@ export default function ReimbursementsLayout() {
         tabs={[
           { to: "/reimbursements", label: "Approval queue", end: true },
           { to: "/reimbursements/history", label: "History" },
+          { to: "/reimbursements/travel", label: "Travel" },
           { to: "/reimbursements/categories", label: "Categories" },
         ]}
       />

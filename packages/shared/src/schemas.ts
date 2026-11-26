@@ -508,6 +508,8 @@ export const claimCreateSchema = z.object({
   gstAmount: z.coerce.number().min(0).max(1e7).nullable().optional(),
   project: nullable(trimmed(120)),
   description: trimmed(300).min(3, "Say what the expense was for"),
+  /** The approved trip this expense was for. */
+  travelRequestId: z.string().nullable().optional(),
 });
 
 // ---------- payments ----------

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useMyTrips } from "@/components/travel/Travel";
 import { FileText, Paperclip, ScanText, Upload, X } from "lucide-react";
 import { fmtDate, fmtMoney, todayLocal } from "@hrms/shared";
 import { api, errorMessage, openFile, qs } from "@/lib/api";
@@ -64,7 +65,7 @@ interface EmpHit {
 export function ClaimDialog({ open, onClose, categories, pickEmployee, endpoint }: { open: boolean; onClose: () => void; categories: ExpenseCategory[]; pickEmployee?: boolean; endpoint: string }) {
   const qc = useQueryClient();
   const active = useMemo(() => categories.filter((c) => c.active), [categories]);
-  const blank = () => ({ categoryId: active[0]?.id ?? "", expenseDate: todayLocal(), amount: "", km: "", vendor: "", gstin: "", gstAmount: "", project: "", description: "" });
+  const blank = () => ({ categoryId: active[0]?.id ?? "", expenseDate: todayLocal(), amount: "", km: "", vendor: "", gstin: "", gstAmount: "", project: "", description: "", travelRequestId: "" });
   const [f, setF] = useState(blank);
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export function ClaimDialog({ open, onClose, categories, pickEmployee, endpoint 
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
+  const trips = useMyTrips(open && !pickEmployee);
   const [reading, setReading] = useState<number | null>(null);
   const [readNote, setReadNote] = useState<string | null>(null);
   const readIt = async () => {
@@ -157,6 +159,7 @@ export function ClaimDialog({ open, onClose, categories, pickEmployee, endpoint 
         gstin: cat.gstCapture && f.gstin.trim() ? f.gstin.trim().toUpperCase() : null,
         gstAmount: cat.gstCapture && f.gstAmount ? Number(f.gstAmount) : null,
         project: f.project.trim() || null,
+        travelRequestId: f.travelRequestId || null,
         description: f.description.trim(),
       };
       const fd = new FormData();
@@ -249,6 +252,14 @@ export function ClaimDialog({ open, onClose, categories, pickEmployee, endpoint 
               <Input inputMode="decimal" value={f.gstAmount} onChange={(e) => set("gstAmount", e.target.value.replace(/[^\d.]/g, ""))} placeholder="0" />
             </Field>
           </>
+        ) : null}
+        {!pickEmployee && (trips.data ?? []).some((t) => t.status === "approved") ? (
+          <Field label="Trip" hint="Link it to an approved trip, so it's settled with the trip's advance." span>
+            <Select value={f.travelRequestId} onChange={(e) => set("travelRequestId", e.target.value)}>
+              <option value="">Not for a trip</option>
+              {(trips.data ?? []).filter((t) => t.status === "approved").map((t) => <option key={t.id} value={t.id}>{t.code}: {t.fromCity} to {t.toCity}</option>)}
+            </Select>
+          </Field>
         ) : null}
         <Field label="Project / client" span>
           <Input value={f.project} onChange={(e) => set("project", e.target.value)} placeholder="Optional" maxLength={120} />

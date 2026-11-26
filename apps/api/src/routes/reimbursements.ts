@@ -1,3 +1,4 @@
+import { travelRequests } from "@hrms/db";
 import { Hono, type Context } from "hono";
 import { sendNotification } from "../services/notifications";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from "drizzle-orm";
@@ -168,12 +169,16 @@ async function createClaim(c: Context<AppEnv>, employeeId: string, form: FormDat
     const left = (await fbpBalances(db, tid(c), emp.id, fy))[cat.fbpHead]?.balance ?? 0;
     if (amount > left) throw badRequest(left > 0 ? `You have ${fmtMoney(left)} left to claim under ${cat.name} so far this year` : `Nothing has built up under ${cat.name} yet. It's credited with each month's salary.`);
   }
+  if (b.travelRequestId) {
+    const [trip] = await db.select().from(travelRequests).where(and(eq(travelRequests.id, b.travelRequestId), eq(travelRequests.tenantId, tid(c)), eq(travelRequests.employeeId, emp.id)));
+    if (!trip || trip.status !== "approved") throw badRequest("Pick one of your approved trips that hasn't been settled");
+  }
   const limit = await overLimit(db, tid(c), cat, emp.id, b.expenseDate, amount);
   const status = initialStatus(cat, !!emp.managerId);
   const code = await nextClaimCode(db, tid(c));
   const [claim] = await db
     .insert(reimbursementClaims)
-    .values({ tenantId: tid(c), code, employeeId: emp.id, categoryId: cat.id, expenseDate: b.expenseDate, amount, km: b.km ?? null, vendor: b.vendor ?? null, gstin: cat.gstCapture ? (b.gstin ?? null) : null, gstAmount: cat.gstCapture ? (b.gstAmount ?? null) : null, project: b.project ?? null, description: b.description, status, overLimit: limit.over })
+    .values({ tenantId: tid(c), code, employeeId: emp.id, categoryId: cat.id, expenseDate: b.expenseDate, amount, km: b.km ?? null, vendor: b.vendor ?? null, gstin: cat.gstCapture ? (b.gstin ?? null) : null, gstAmount: cat.gstCapture ? (b.gstAmount ?? null) : null, project: b.project ?? null, travelRequestId: b.travelRequestId ?? null, description: b.description, status, overLimit: limit.over })
     .returning();
   for (const f of files) {
     const key = `tenants/${tid(c)}/claims/${claim!.id}/${crypto.randomUUID()}-${safeName(f.name)}`;

@@ -49,6 +49,8 @@ export const reimbursementClaims = pgTable(
     gstin: text("gstin"),
     gstAmount: money("gst_amount"),
     project: text("project"),
+    /** The trip this expense was for, if any. */
+    travelRequestId: text("travel_request_id"),
     description: text("description").notNull(),
     status: text("status").notNull().default("pending_finance"),
     overLimit: boolean("over_limit").notNull().default(false),
