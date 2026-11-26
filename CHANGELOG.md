@@ -12,6 +12,7 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 - The first four add-ons are in the catalogue (AI assistant, Sign in and work tools, Face attendance kiosk, Forms and workflows), not on sale yet. Each goes on sale when its feature ships.
 - Zapier. A Zapier app in `integrations/zapier` with instant triggers (new employee, updated employee, exit completed, leave approved, payroll approved, payroll paid) and an Add Employee action. See its README to publish it.
 - Public API additions for Zapier and similar tools: `GET /v1/me`, subscribe and unsubscribe webhooks (`/v1/hooks`), recent event samples, and `POST /v1/employees` to add an employee who then gets the onboarding email. Two new key scopes: "Add employees" and "Subscribe to events".
+- Read a receipt. When an employee attaches a receipt photo to a claim, "Fill in from the receipt" reads the amount, date, seller, and the GSTIN and GST where the category collects them. It runs in the browser (Tesseract, served from our own site), so the photo never leaves the device, and the person checks the values before submitting.
 
 ### Planned
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileText, Paperclip, Upload, X } from "lucide-react";
+import { FileText, Paperclip, ScanText, Upload, X } from "lucide-react";
 import { fmtDate, fmtMoney, todayLocal } from "@hrms/shared";
 import { api, errorMessage, openFile, qs } from "@/lib/api";
 import type { Claim, ClaimDetail, ClaimStatus, ExpenseCategory } from "@/lib/types";
@@ -72,6 +72,33 @@ export function ClaimDialog({ open, onClose, categories, pickEmployee, endpoint 
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
+  const [reading, setReading] = useState<number | null>(null);
+  const [readNote, setReadNote] = useState<string | null>(null);
+  const readIt = async () => {
+    const img = files.find((x) => x.type.startsWith("image/"));
+    if (!img) return;
+    setReading(0);
+    setReadNote(null);
+    try {
+      const { readReceipt } = await import("@/lib/receipt-ocr");
+      const g = await readReceipt(img, (p) => setReading(p));
+      const patch: Partial<ReturnType<typeof blank>> = {};
+      const found: string[] = [];
+      if (g.amount !== null) (patch.amount = String(g.amount), found.push("amount"));
+      if (g.date) (patch.expenseDate = g.date, found.push("date"));
+      if (g.vendor && !f.vendor) (patch.vendor = g.vendor, found.push("seller"));
+      // GST only matters on categories that collect it
+      if (cat?.gstCapture && g.gstin) (patch.gstin = g.gstin, found.push("GSTIN"));
+      if (cat?.gstCapture && g.gstAmount !== null) (patch.gstAmount = String(g.gstAmount), found.push("GST"));
+      setF((x) => ({ ...x, ...patch }));
+      setReadNote(found.length ? `Filled in the ${found.join(", ")}. Check them before you submit.` : "Couldn't read it clearly. Fill in the details yourself.");
+    } catch (e) {
+      console.error("receipt reading failed", e);
+      setReadNote("Couldn't read the receipt here. Fill in the details yourself.");
+    } finally {
+      setReading(null);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -265,6 +292,12 @@ export function ClaimDialog({ open, onClose, categories, pickEmployee, endpoint 
               </button>
             </span>
           ))}
+        </div>
+      ) : null}
+      {files.some((x) => x.type.startsWith("image/")) ? (
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+          <Button size="sm" loading={reading !== null} onClick={readIt}><ScanText size={14} /> Fill in from the receipt</Button>
+          <span className="text-muted">{reading !== null ? `Reading… ${Math.round(reading * 100)}%` : readNote ?? "Reads the amount, date, seller and GST. Stays on your device."}</span>
         </div>
       ) : null}
       {error ? <Notice tone="bad">{error}</Notice> : null}
