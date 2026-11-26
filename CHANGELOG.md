@@ -6,10 +6,7 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-### Changed
-
-- The app now matches saralix.com: warm off-white (or near-black in dark mode) backgrounds, white cards with a hairline border, black primary buttons (off-white in dark mode), and a green accent for links, the active menu item, focus rings, checks and progress. All purple and lavender is gone, from the dashboard to the sign-in pages, emails, payslip and Form 16 PDFs and the login.saralix.com page. Every text and control pair meets WCAG AA in both modes.
-- The Saralix mark replaces the "S" tile in the sidebar, sign-in and sign-up, and in the favicon and app icons.
+Nothing yet.
 
 ### Planned
 
@@ -22,6 +19,15 @@ These need something from us before they can be built or switched on:
 - State minimum wage tables by zone and skill, and an ESI and PT check against a second source (network access to hrengage.ai).
 - A staging site, and the Gulf, Saudi, UK, US and Canada sites (a Neon database and GitHub environment for each). The country packs are already built.
 - Expert review of the golden payroll files and of the flexible benefit caps.
+
+## [1.2.0] - 2026-11-26
+
+The app, emails and PDFs now match saralix.com, with the Saralix mark as the logo and icons.
+
+### Changed
+
+- The app now matches saralix.com: warm off-white (or near-black in dark mode) backgrounds, white cards with a hairline border, black primary buttons (off-white in dark mode), and a green accent for links, the active menu item, focus rings, checks and progress. All purple and lavender is gone, from the dashboard to the sign-in pages, emails, payslip and Form 16 PDFs and the login.saralix.com page. Every text and control pair meets WCAG AA in both modes.
+- The Saralix mark replaces the "S" tile in the sidebar, sign-in and sign-up, and in the favicon and app icons.
 
 ## [1.1.0] - 2026-11-25
 
@@ -90,6 +96,7 @@ The first release: the India site at app.saralix.com, with everything built so f
 - Reports, and free income tax and gratuity calculators at /tools.
 - Multi-country groundwork: country packs for the UAE, Saudi Arabia, Qatar, Kuwait, Oman, Bahrain, the UK, the US and Canada; a control plane with one sign in page; wave rollouts, monitoring, backups and restore drills.
 
-[Unreleased]: https://github.com/strats360/saralix/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/strats360/saralix/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/strats360/saralix/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/strats360/saralix/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/strats360/saralix/releases/tag/v1.0.0

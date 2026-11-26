@@ -14,7 +14,7 @@ export const flagRoutes = new Hono<AppEnv>();
 flagRoutes.use("*", requirePlatform());
 
 /** The running version. Keep it the same as package.json and the latest CHANGELOG.md entry (a test checks). */
-export const RELEASE = { version: "1.1.0", name: "Safer sign-up, setup checklist, Cloudflare email" };
+export const RELEASE = { version: "1.2.0", name: "Matches saralix.com: new theme, logo and icons" };
 
 flagRoutes.get("/", async (c) => {
   const db = c.get("db");
