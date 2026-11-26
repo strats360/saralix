@@ -109,7 +109,7 @@ export default function EssProfilePage() {
         </div>
       </Card>
 
-      <Link to="/me/committees" className="card flex-row items-center justify-between !gap-3 no-underline md:hidden">
+      <Link to="/me/committees" className="card flex-row items-center justify-between !gap-3 no-underline xl:hidden">
         <span><b className="font-semibold">Raise a concern</b> <span className="text-muted text-[13px]">Confidential, to your company's committees</span></span>
         <span aria-hidden>›</span>
       </Link>

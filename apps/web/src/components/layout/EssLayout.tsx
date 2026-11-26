@@ -1,7 +1,8 @@
 import { t as tr, useLocale } from "@/lib/i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { useEffect } from "react";
-import { Navigate, NavLink, Outlet } from "react-router";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { Menu } from "@/components/ui/menu";
 import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { queuedPunches, sendQueuedPunches } from "@/lib/offline";
@@ -20,10 +21,11 @@ const TABS = [
   { to: "/me/tax", label: "Tax", icon: Percent, feature: "module.tds" },
   { to: "/me/claims", label: "Claims", icon: Receipt, feature: "module.reimbursements" },
   // the phone tab bar has no room; phones reach reviews from Home
-  { to: "/me/reviews", label: "Reviews", icon: Target, feature: "module.performance", phone: false },
-  { to: "/me/engagement", label: "Kudos", icon: PartyPopper, feature: "module.engagement", phone: false },
-  { to: "/me/helpdesk", label: "Help", icon: LifeBuoy, feature: "module.helpdesk", phone: false },
-  { to: "/me/committees", label: "Concerns", icon: ShieldCheck, phone: false },
+  { to: "/me/reviews", label: "Performance", icon: Target, feature: "module.performance", phone: false },
+  // desktop puts these under "More" so the bar fits next to the admin console button
+  { to: "/me/engagement", label: "Kudos", icon: PartyPopper, feature: "module.engagement", phone: false, more: true },
+  { to: "/me/helpdesk", label: "Help", icon: LifeBuoy, feature: "module.helpdesk", phone: false, more: true },
+  { to: "/me/committees", label: "Concerns", icon: ShieldCheck, phone: false, more: true },
   { to: "/me/profile", label: "Profile", icon: User },
 ];
 
@@ -34,6 +36,10 @@ export function EssLayout() {
   const tabs = TABS.filter((t) => !("feature" in t) || has((t as { feature: string }).feature));
   const phoneTabs = tabs.filter((t) => !("phone" in t && t.phone === false));
   const online = useOnline();
+  const loc = useLocation();
+  const navigate = useNavigate();
+  // Reviews, OKRs, Feedback and 1:1s are one "Performance" tab
+  const perf = ["/me/reviews", "/me/okrs", "/me/feedback", "/me/one-on-ones"].some((p) => loc.pathname.startsWith(p));
   const eid = tenant?.employeeId ?? null;
   // send punches saved offline as soon as there's a connection
   useEffect(() => {
@@ -45,30 +51,37 @@ export function EssLayout() {
   }, [online, eid]);
   if (!tenant?.employeeId) return <Navigate to={tenant?.roleId ? "/" : "/login"} replace />;
   return (
-    <div className="min-h-screen pb-20 md:pb-10" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
+    <div className="min-h-screen pb-20 xl:pb-10" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
       <header className="sticky top-0 z-10 border-b border-[var(--color-divider)]" style={{ paddingTop: "env(safe-area-inset-top)", background: "color-mix(in srgb, var(--color-bg) 92%, transparent)", backdropFilter: "blur(8px)" }}>
         <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-4 py-2.5">
           <div className="-mb-[18px]">
             <Brand subtitle={tenant.tenantName} />
           </div>
-          <nav className="ms-4 hidden gap-1 md:flex" aria-label="Self-service">
-            {tabs.map((t) => (
-              <NavLink key={t.to} to={t.to} end={t.end} className="rounded-[var(--radius-md)] px-3 py-2 text-[14px] no-underline hover:bg-[var(--tint-1)]" style={({ isActive }) => ({ background: isActive ? "var(--sel-bg)" : undefined, color: isActive ? "var(--sel-fg)" : "var(--color-text)", fontWeight: isActive ? 600 : 400 })}>
+          <nav className="ms-4 hidden gap-1 xl:flex" aria-label="Self-service">
+            {tabs.filter((t) => !("more" in t)).map((t) => (
+              <NavLink key={t.to} to={t.to} end={t.end} className="rounded-[var(--radius-md)] px-3 py-2 text-[14px] no-underline hover:bg-[var(--tint-1)]" style={({ isActive: hit }) => { const isActive = hit || (t.to === "/me/reviews" && perf); return { background: isActive ? "var(--sel-bg)" : undefined, color: isActive ? "var(--sel-fg)" : "var(--color-text)", fontWeight: isActive ? 600 : 400 }; }}>
                 {tr(t.label)}
               </NavLink>
             ))}
+            {tabs.some((t) => "more" in t) ? (
+              <Menu
+                align="start"
+                trigger={<button type="button" className="cursor-pointer rounded-[var(--radius-md)] border-0 bg-transparent px-3 py-2 text-[14px] hover:bg-[var(--tint-1)]" style={{ color: tabs.some((t) => "more" in t && loc.pathname.startsWith(t.to)) ? "var(--sel-fg)" : "var(--color-text)" }}>{tr("More")}</button>}
+                items={tabs.filter((t) => "more" in t).map((t) => ({ label: tr(t.label), onSelect: () => navigate(t.to) }))}
+              />
+            ) : null}
           </nav>
           <div className="ms-auto flex items-center gap-2">
             {tenant.roleId ? (
-              <NavLink to="/" className="btn btn-secondary hidden !text-[13px] sm:inline-flex">
-                <LayoutDashboard size={15} /> {tr("Admin console")}
+              <NavLink to="/" className="btn btn-secondary hidden !text-[13px] sm:inline-flex" aria-label={tr("Admin console")} title={tr("Admin console")}>
+                <LayoutDashboard size={15} /> <span className="sm:inline xl:hidden 2xl:inline">{tr("Admin console")}</span>
               </NavLink>
             ) : null}
             <ThemeToggle />
             <NavLink to="/account/security" className="btn btn-secondary btn-icon" aria-label="Your account" title="Your account: sign-in, security and email settings">
               <ShieldCheck size={17} />
             </NavLink>
-            <span className="hidden text-[13px] font-medium sm:inline">{me?.user.name}</span>
+            <span className="hidden text-[13px] font-medium sm:inline xl:hidden 2xl:inline">{me?.user.name}</span>
             <LanguageSwitch />
             <Button icon onClick={signOut} aria-label={tr("Sign out")} title={tr("Sign out")}>
               <LogOut size={17} />
@@ -84,7 +97,7 @@ export function EssLayout() {
       <main className="mx-auto flex max-w-[1100px] flex-col gap-4 px-4 pt-5">
         <Outlet />
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-10 grid border-t border-[var(--color-divider)] md:hidden" aria-label="Self-service" style={{ background: "var(--color-surface)", gridTemplateColumns: `repeat(${phoneTabs.length}, minmax(0, 1fr))`, paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav className="fixed inset-x-0 bottom-0 z-10 grid border-t border-[var(--color-divider)] xl:hidden" aria-label="Self-service" style={{ background: "var(--color-surface)", gridTemplateColumns: `repeat(${phoneTabs.length}, minmax(0, 1fr))`, paddingBottom: "env(safe-area-inset-bottom)" }}>
         {phoneTabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.end} className="flex min-w-0 flex-col items-center gap-0.5 py-2 text-[10.5px] no-underline" style={({ isActive }) => ({ color: isActive ? "var(--sel-fg)" : "var(--muted)" })}>
             <t.icon size={20} />

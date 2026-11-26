@@ -5,6 +5,7 @@ export const ESS_PERFORMANCE_TABS = [
   { to: "/me/reviews", label: "Reviews" },
   { to: "/me/okrs", label: "OKRs" },
   { to: "/me/feedback", label: "Feedback" },
+  { to: "/me/one-on-ones", label: "1:1s" },
 ];
 
 /** My objectives, my team's, and the company and team ones they line up under. */

@@ -23,6 +23,7 @@ export * from "./engagement";
 export * from "./kyc";
 export * from "./okrs";
 export * from "./feedback";
+export * from "./one-on-ones";
 export * from "./helpdesk";
 export * from "./contractors";
 export * from "./fbp";

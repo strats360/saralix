@@ -79,6 +79,7 @@ const router = createBrowserRouter([
             { path: "reviews", element: L(() => import("@/pages/ess/Reviews")) },
             { path: "okrs", element: L(() => import("@/pages/ess/Okrs")) },
             { path: "feedback", element: L(() => import("@/pages/ess/Feedback")) },
+            { path: "one-on-ones", element: L(() => import("@/pages/ess/OneOnOnes")) },
             { path: "interviews", element: L(() => import("@/pages/ess/Interviews")) },
             { path: "timesheets", element: L(() => import("@/pages/ess/Timesheets")) },
             { path: "announcements", element: L(() => import("@/pages/ess/Announcements")) },

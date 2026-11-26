@@ -284,9 +284,7 @@ function ReviewNotice() {
         <Link to={`/me/reviews?id=${todo.id}`} style={{ color: "inherit", textDecoration: "underline" }}>{todo.stage === "self" ? "Start my review" : "Read it"}</Link>
       </Notice>
     );
-  return list.length ? (
-    <Link to="/me/reviews" className="text-[13px] md:hidden">Your performance reviews</Link>
-  ) : null;
+  return has("module.performance") ? <Link to="/me/reviews" className="text-[13px] xl:hidden">Performance: reviews, goals, feedback and 1:1s</Link> : null;
 }
 
 /** A survey waiting for an answer, and the way to kudos on phones (no room in the tab bar). */
@@ -302,7 +300,7 @@ function SurveyNotice() {
         <Link to={todo.length === 1 ? `/me/engagement/surveys/${todo[0]!.id}` : "/me/engagement"} style={{ color: "inherit", textDecoration: "underline" }}>Answer now</Link>
       </Notice>
     );
-  return <Link to="/me/engagement" className="text-[13px] md:hidden">Kudos and surveys</Link>;
+  return <Link to="/me/engagement" className="text-[13px] xl:hidden">Kudos and surveys</Link>;
 }
 
 /** Interviews waiting for this person's feedback, or coming up today. */
