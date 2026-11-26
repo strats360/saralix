@@ -34,7 +34,10 @@ import {
   roles,
   tenants,
   attendanceRecords,
+  keyResults,
   kudos,
+  objectives,
+  okrCheckins,
   surveyParticipants,
   surveyResponses,
   surveys,
@@ -47,7 +50,7 @@ import { applyUsage, ensureBalances } from "../src/services/leave";
 import { calculateRun, defaultPayDate, monthBounds } from "../src/services/payroll";
 import { payrollItems, payrollRuns, statutoryChallans, taxDeclarations, tdsReturns, user } from "@hrms/db";
 import { inArray } from "drizzle-orm";
-import { dueDate } from "@hrms/shared";
+import { dueDate, objectiveProgress, periodOf } from "@hrms/shared";
 import { obligationsForRun } from "../src/routes/compliance";
 import { reimbursementCategories, reimbursementClaims } from "@hrms/db";
 import { initialStatus, settleClaims } from "../src/services/reimbursements";
@@ -113,6 +116,7 @@ async function main() {
     await seedChallans(existing.id);
     await seedPayments(existing.id);
     await seedEngagement(existing.id);
+    await seedOkrs(existing.id);
     if (!DEMO) await seedBilling(existing.id);
     console.log(added ? `Added ${added} months of payroll history to the existing demo tenant.` : "Demo tenant already exists. To reseed, drop and recreate the database, then run migrations.");
     await db.$client.end();
@@ -434,6 +438,7 @@ async function main() {
   await seedChallans(tid);
   await seedPayments(tid);
   await seedEngagement(tid);
+  await seedOkrs(tid);
   if (DEMO) await db.update(tenants).set({ settings: sql`${tenants.settings} || '{"demo": true}'::jsonb` }).where(eq(tenants.id, tid));
   else await seedBilling(tid);
   console.log(`Payroll history: ${months} locked months`);
@@ -449,6 +454,32 @@ async function main() {
   ]);
   if (!DEMO) console.log("Try employee self-onboarding with:", links[0]);
   await db.$client.end();
+}
+
+/** This quarter's OKRs: two company objectives, team ones under them, and a personal one. */
+async function seedOkrs(tid: string) {
+  const [any] = await db.select({ id: objectives.id }).from(objectives).where(eq(objectives.tenantId, tid)).limit(1);
+  if (any) return;
+  const period = periodOf(today);
+  const emp = new Map((await db.select({ id: employees.id, code: employees.employeeCode }).from(employees).where(eq(employees.tenantId, tid))).map((e) => [e.code, e.id]));
+  const dept = new Map((await db.select({ id: departments.id, name: departments.name }).from(departments).where(eq(departments.tenantId, tid))).map((d) => [d.name, d.id]));
+  type K = { title: string; kind?: string; start?: number; target: number; current: number; unit?: string };
+  const add = async (o: { level: string; title: string; owner?: string; dept?: string; parent?: string; confidence?: string; note?: string; krs: K[] }) => {
+    const [row] = await db.insert(objectives).values({ tenantId: tid, level: o.level, title: o.title, period, ownerId: o.owner ? emp.get(o.owner) ?? null : null, departmentId: o.dept ? dept.get(o.dept) ?? null : null, parentId: o.parent ?? null, confidence: o.confidence ?? null, lastCheckinAt: o.confidence ? new Date(`${today}T05:00:00Z`) : null }).returning();
+    await db.insert(keyResults).values(o.krs.map((k, i) => ({ tenantId: tid, objectiveId: row!.id, title: k.title, kind: k.kind ?? "number", start: k.start ?? 0, target: k.target, current: k.current, unit: k.unit ?? null, sortOrder: i })));
+    if (o.confidence) {
+      const progress = objectiveProgress(o.krs.map((k) => ({ kind: (k.kind ?? "number") as never, start: k.start ?? 0, target: k.target, current: k.current })));
+      await db.insert(okrCheckins).values({ tenantId: tid, objectiveId: row!.id, values: {}, progress, confidence: o.confidence, note: o.note ?? "", byName: "Kunal Shah" });
+    }
+    return row!.id;
+  };
+  const grow = await add({ level: "company", title: "Grow revenue while staying profitable", owner: "STL-0171", confidence: "on_track", note: "Strong month in Ahmedabad.", krs: [{ title: "Reach ₹14 Cr annual recurring revenue", kind: "currency", start: 105000000, target: 140000000, current: 121000000 }, { title: "Win 60 new customers", target: 60, current: 34, unit: "customers" }, { title: "Bring monthly churn down to 1.5%", kind: "percent", start: 3, target: 1.5, current: 2.2 }] });
+  const people = await add({ level: "company", title: "Make this a great place to work", owner: "STL-0063", confidence: "at_risk", note: "Hiring for two senior roles is slower than planned.", krs: [{ title: "eNPS of +40 or more", start: 25, target: 40, current: 44 }, { title: "Fill 12 open roles", target: 12, current: 5, unit: "roles" }, { title: "Launch the learning budget", kind: "done", target: 1, current: 0 }] });
+  const eng = await add({ level: "team", title: "Ship payroll engine v2", dept: "Engineering", owner: "STL-0001", parent: grow, confidence: "on_track", note: "Beta with five customers.", krs: [{ title: "Launch v2 to all customers", kind: "done", target: 1, current: 0 }, { title: "Run 500 payrolls on v2", target: 500, current: 180, unit: "payrolls" }] });
+  await add({ level: "team", title: "Build a pipeline for next year", dept: "Sales", owner: "STL-0152", parent: grow, confidence: "off_track", note: "Two large deals slipped to January.", krs: [{ title: "₹6 Cr of qualified pipeline", kind: "currency", target: 60000000, current: 21000000 }, { title: "40 demos booked", target: 40, current: 18, unit: "demos" }] });
+  await add({ level: "team", title: "Hire faster without lowering the bar", dept: "Human Resources", owner: "STL-0063", parent: people, krs: [{ title: "Time to hire under 30 days", start: 45, target: 30, current: 38, unit: "days" }] });
+  await add({ level: "individual", title: "Make payslips load instantly", owner: "STL-0042", parent: eng, confidence: "at_risk", note: "Caching helped, fonts are next.", krs: [{ title: "Payslip PDF under 1 second", start: 4, target: 1, current: 2.5, unit: "seconds" }, { title: "Move PDF rendering to the edge", kind: "done", target: 1, current: 0 }] });
+  console.log(`OKRs: 6 objectives for ${period}`);
 }
 
 /** A finished eNPS pulse with shared results, an open monthly pulse, and some kudos. Same data every run. */

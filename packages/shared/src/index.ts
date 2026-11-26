@@ -31,6 +31,7 @@ export * from "./timesheets";
 export * from "./announcements";
 export * from "./engagement";
 export * from "./kyc";
+export * from "./okrs";
 export * from "./helpdesk";
 export * from "./countries";
 export * from "./formula";

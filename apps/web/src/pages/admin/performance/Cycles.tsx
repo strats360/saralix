@@ -12,6 +12,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { Dialog } from "@/components/ui/dialog";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/field";
 import { ErrorState, PageHeader } from "@/components/ui/page";
+import { RouteTabs } from "@/components/ui/tabs";
+import { PERFORMANCE_TABS } from "./Okrs";
 import { Tag, type Tone } from "@/components/ui/tag";
 
 export interface CycleRow {
@@ -62,6 +64,7 @@ export default function Cycles() {
         sub="Review cycles: goals, self reviews, manager reviews and final ratings"
         actions={q.data?.canManage ? <Button variant="primary" onClick={() => setCreating(true)}><Plus size={16} /> New review cycle</Button> : null}
       />
+      <RouteTabs tabs={PERFORMANCE_TABS} />
       {q.error ? <ErrorState error={q.error} retry={() => q.refetch()} /> : null}
       <TableCard>
         <CardHeader className="py-2" title="Review cycles" sub={q.data && !q.data.canManage ? "Cycles your team is part of. Open one to review your people." : undefined} />

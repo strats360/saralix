@@ -16,6 +16,7 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 - Company KYC. A company that signs up now verifies itself before it can add employees or run payroll: it sends its type of business, PAN, GSTIN (or why it has none), CIN or LLPIN, registered address and authorised signatory, and uploads the documents its type needs. We check the PAN matches the type of business and that the GSTIN contains the PAN. Until it's approved the company sees only its dashboard, KYC, company settings, admins, billing and support.
 - A Company KYC queue in the platform console. The team opens each document, then approves, asks for more with a note, or rejects. The company's admins get an email either way, and every step is kept in the history and the audit log.
 - "Verify your company" is now the first step on the Get started card.
+- OKRs: objectives with two to six key results (a number, a percentage, an amount in rupees, or done or not) for the company, a team or a person, by quarter or year of the Indian financial year. Objectives line up under bigger ones, so the board shows how personal goals feed team and company goals. Owners check in with new values, how confident they are and a note; progress and history follow. HR sets company and team objectives; people add their own, and managers add and update their team's. Personal objectives are seen only by the person, their manager and HR.
 
 ### Changed
 

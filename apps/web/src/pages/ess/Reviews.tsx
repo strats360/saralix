@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { RouteTabs } from "@/components/ui/tabs";
+import { ESS_PERFORMANCE_TABS } from "./Okrs";
 import { useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -40,6 +42,7 @@ export default function EssReviews() {
         <h1 className="!mb-1 text-[26px]">Reviews</h1>
         <div className="text-muted text-[13.5px]">Set your goals, rate how the period went, and read your manager's review.</div>
       </div>
+      <RouteTabs tabs={ESS_PERFORMANCE_TABS} />
       {!list.length ? (
         <Card>
           <Empty title="No reviews yet" sub="When HR starts a review cycle, yours appears here." />

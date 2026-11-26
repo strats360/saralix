@@ -5,8 +5,8 @@ What's next, grouped. It comes from a comparison with the popular Indian HRMS pr
 ## Now
 
 1. **Engagement.** Pulse surveys, polls, eNPS and kudos. *Done, in Unreleased.*
-2. **Company KYC.** A new company sends its PAN, GST or other registration, address proof and an authorised signatory's ID. The platform team approves it, rejects it with a reason, or asks for more. Until it's approved the company can only do setup and KYC.
-3. **Performance.** OKRs for the company, teams and people with check ins; peer and 360 feedback in review cycles; continuous feedback; 1:1 meeting notes and agendas.
+2. **Company KYC.** *Done, in Unreleased.* A new company sends its PAN, GST or other registration, address proof and an authorised signatory's ID. The platform team approves it, rejects it with a reason, or asks for more. Until it's approved the company can only do setup and KYC.
+3. **Performance.** OKRs for the company, teams and people with check ins (*done, in Unreleased*); peer and 360 feedback in review cycles; continuous feedback; 1:1 meeting notes and agendas.
 4. **Paid add-ons in billing.** Add-ons on top of a plan, each with a monthly price per employee or a flat price, switched on per company and added to the invoice with GST. The four add-ons below need this first.
 5. **Sign in and work tools (paid add-on).** Sign in with Google and Microsoft; Slack and Microsoft Teams alerts and approvals; an MCP server so outside AI tools can use Saralix.
 6. **Zapier.** Triggers (new employee, exit, leave approved, payroll published, new kudos) and actions (add employee, add leave) on top of the public API and webhooks.
