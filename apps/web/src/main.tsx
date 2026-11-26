@@ -8,8 +8,10 @@ import { ApiError, errorMessage } from "@/lib/api";
 import { App } from "./App";
 import { ConfirmHost } from "@/components/ui/confirm";
 import { setupPwa } from "@/lib/pwa";
+import { watchStaleBuilds } from "@/lib/stale-build";
 
 setupPwa();
+watchStaleBuilds();
 
 const queryClient = new QueryClient({
   defaultOptions: {

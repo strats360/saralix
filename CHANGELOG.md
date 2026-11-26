@@ -6,7 +6,14 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- After a deploy, a tab opened before it no longer shows "Failed to fetch dynamically imported module". It reloads once by itself to pick up the new version.
+- A page that fails now shows a Saralix error page with Reload and Go to dashboard, in place of the router's technical screen. The details go to the browser console, not the screen.
+
+### Changed
+
+- The build and deploy workflows use the Node 24 versions of their GitHub actions, which clears the Node 20 warning.
 
 ### Planned
 
