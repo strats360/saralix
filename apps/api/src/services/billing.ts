@@ -1,6 +1,6 @@
 import { and, eq, inArray, like, ne, notInArray, sql } from "drizzle-orm";
-import { employees, invoices, legalEntities, platformSettings, plans, tenants, type Database, type InvoiceParty } from "@hrms/db";
-import { billableSeats, COUNTRIES, currencyDecimals, invoiceTaxFor, invoicingEntitySchema, stateCodeOf, todayLocal, type InvoiceTaxLine } from "@hrms/shared";
+import { addons, employees, invoices, legalEntities, platformSettings, plans, tenantAddons, tenants, type Database, type InvoiceParty } from "@hrms/db";
+import { addonBilledIn, addonCharge, billableSeats, COUNTRIES, currencyDecimals, invoiceTaxFor, invoicingEntitySchema, stateCodeOf, todayLocal, type InvoiceTaxLine } from "@hrms/shared";
 import type { z } from "zod";
 
 export type InvoicingEntity = z.infer<typeof invoicingEntitySchema>;
@@ -66,6 +66,10 @@ export interface DraftInvoice {
   taxLines: InvoiceTaxLine[];
   total: number;
   currency: string;
+  /** The plan's share of the subtotal, before add-ons. */
+  planAmount: number;
+  /** Paid add-ons on for this period, one invoice line each. */
+  addons: { key: string; name: string; pricing: string; price: number; amount: number }[];
   skip: string | null;
 }
 
@@ -80,12 +84,17 @@ export async function draftInvoices(db: Database, period: string, tenantIds?: st
   const decimals = currencyDecimals(entity.currency);
   const existing = new Set((await db.select({ t: invoices.tenantId }).from(invoices).where(and(eq(invoices.period, period), ne(invoices.status, "void")))).map((r) => r.t));
   const periodEnd = `${period}-28`;
+  const catalogue = new Map((await db.select().from(addons)).map((a) => [a.key, a]));
+  const taRows = ts.length ? await db.select().from(tenantAddons).where(inArray(tenantAddons.tenantId, ts.map((t) => t.id))) : [];
   return ts.map((t) => {
     const plan = ps.get(t.plan);
     const active = counts.get(t.id) ?? 0;
     const seats = billableSeats(active, plan?.minSeats ?? 0);
     const rate = Number(t.customPrice ?? plan?.pricePerEmployee ?? 0);
-    const subtotal = Math.round(seats * rate * 10 ** decimals) / 10 ** decimals;
+    const planAmount = Math.round(seats * rate * 10 ** decimals) / 10 ** decimals;
+    const on = taRows.filter((a) => a.tenantId === t.id && addonBilledIn(a, period));
+    const addonLines = [...new Set(on.map((a) => a.addonKey))].map((k) => catalogue.get(k)!).filter(Boolean).map((a) => ({ key: a.key, name: a.name, pricing: a.pricing, price: Number(a.price), amount: addonCharge({ pricing: a.pricing, price: Number(a.price) }, seats, decimals) }));
+    const subtotal = Math.round((planAmount + addonLines.reduce((s2, a) => s2 + a.amount, 0)) * 10 ** decimals) / 10 ** decimals;
     // GST in India, VAT in the Gulf and the UK, zero rated when the customer is in another country
     const tax = invoiceTaxFor({ subtotal, sellerCountry: entity.country, buyerCountry: buyers.get(t.id)?.country ?? "IN", sellerStateCode: sellerCode, buyerStateCode: stateCodeOf(t.gstin, t.state), decimals });
     let skip: string | null = null;
@@ -97,7 +106,7 @@ export async function draftInvoices(db: Database, period: string, tenantIds?: st
     else if (!rate) skip = "No price: set a custom rate for this tenant";
     else if (t.createdAt.toISOString().slice(0, 10) > periodEnd) skip = "Joined after this period";
     else if (!seats) skip = "No active employees";
-    return { tenantId: t.id, tenantName: t.name, tenantCode: t.code, planKey: t.plan, planName: plan?.name ?? t.plan, seats, activeEmployees: active, rate, subtotal, cgst: tax.cgst, sgst: tax.sgst, igst: tax.igst, taxLines: tax.lines, total: tax.total, currency: entity.currency, skip };
+    return { tenantId: t.id, tenantName: t.name, tenantCode: t.code, planKey: t.plan, planName: plan?.name ?? t.plan, seats, activeEmployees: active, rate, subtotal, cgst: tax.cgst, sgst: tax.sgst, igst: tax.igst, taxLines: tax.lines, total: tax.total, currency: entity.currency, planAmount, addons: addonLines, skip };
   });
 }
 
@@ -139,7 +148,10 @@ export async function issueInvoices(db: Database, period: string, userId: string
         planName: d.planName,
         seats: d.seats,
         rate: d.rate,
-        lines: [{ description: `${d.planName} plan · ${periodLabel(period)} · ${d.seats} employees${d.seats > d.activeEmployees ? ` (plan minimum, ${d.activeEmployees} active)` : ""}`, sac: entity.sac, quantity: d.seats, rate: d.rate, amount: d.subtotal }],
+        lines: [
+          { description: `${d.planName} plan · ${periodLabel(period)} · ${d.seats} employees${d.seats > d.activeEmployees ? ` (plan minimum, ${d.activeEmployees} active)` : ""}`, sac: entity.sac, quantity: d.seats, rate: d.rate, amount: d.planAmount },
+          ...d.addons.map((a) => ({ description: `${a.name} add-on · ${periodLabel(period)}${a.pricing === "flat" ? "" : ` · ${d.seats} employees`}`, sac: entity.sac, quantity: a.pricing === "flat" ? 1 : d.seats, rate: a.price, amount: a.amount })),
+        ],
         subtotal: d.subtotal,
         cgst: d.cgst,
         sgst: d.sgst,

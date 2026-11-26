@@ -1,3 +1,4 @@
+import { ADDON_KEYS } from "./addons";
 /** Feature flags: which features a tenant gets. Unknown flags default to on (fail open). */
 export interface FlagRule {
   key: string;
@@ -45,9 +46,13 @@ export function flagOn(f: FlagRule, tenant: { id: string; plan: string }) {
   return true;
 }
 
-/** All flags for one tenant, with known features defaulting to on when no flag exists. */
-export function evaluateFlags(flags: FlagRule[], tenant: { id: string; plan: string }): Record<string, boolean> {
+/**
+ * All flags for one tenant. Known features default to on when no flag exists. Paid add-ons
+ * default to off: they're on when the tenant has switched them on, or a flag grants them.
+ */
+export function evaluateFlags(flags: FlagRule[], tenant: { id: string; plan: string }, addons: string[] = []): Record<string, boolean> {
   const out: Record<string, boolean> = Object.fromEntries(Object.keys(FEATURES).map((k) => [k, true]));
-  for (const f of flags) out[f.key] = flagOn(f, tenant);
+  for (const k of ADDON_KEYS) out[k] = addons.includes(k);
+  for (const f of flags) out[f.key] = (ADDON_KEYS as readonly string[]).includes(f.key) ? addons.includes(f.key) || flagOn(f, tenant) : flagOn(f, tenant);
   return out;
 }

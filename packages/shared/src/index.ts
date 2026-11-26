@@ -34,6 +34,7 @@ export * from "./kyc";
 export * from "./okrs";
 export * from "./feedback";
 export * from "./one-on-ones";
+export * from "./addons";
 export * from "./helpdesk";
 export * from "./countries";
 export * from "./formula";

@@ -6,7 +6,10 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Paid add-ons. The platform team sets each add-on's name, description and price (per employee or flat, a month) under Plans & pricing, and whether it's on sale. Companies switch add-ons on and off under Settings → Billing, with a monthly estimate for their headcount; they're free during the trial. Each add-on that was on during a month is its own line on that month's invoice, with GST. A feature flag on the same key can give one free to a company for a pilot.
+- The first four add-ons are in the catalogue (AI assistant, Sign in and work tools, Face attendance kiosk, Forms and workflows), not on sale yet. Each goes on sale when its feature ships.
 
 ### Planned
 

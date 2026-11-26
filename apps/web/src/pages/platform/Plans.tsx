@@ -1,3 +1,4 @@
+import { PlatformAddons } from "@/components/billing/Addons";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ export default function Plans() {
         ))}
       </div>
       <Notice tone="sel">Enterprise has no list price. Set a negotiated rate on the tenant (Tenants › Billing), and it's used on their invoices.</Notice>
+      <PlatformAddons superAdmin={superAdmin} />
       <PlanDialog value={edit} onClose={() => setEdit(null)} />
     </>
   );

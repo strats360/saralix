@@ -1,3 +1,4 @@
+import { AddonsCard } from "@/components/billing/Addons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -158,6 +159,7 @@ export default function Billing() {
         <StatCard label="Payment method" value={d.billing.paymentMethod?.split(" · ")[0] ?? (d.payOnline ? "Pay online" : "Bank transfer")} meta={d.billing.paymentMethod?.split(" · ").slice(1).join(" · ") || (d.payOnline ? "UPI, cards or netbanking through Cashfree" : "UPI or NEFT against each invoice")} />
       </div>
       <AutopayCard />
+      <AddonsCard />
       <TableCard>
         <CardHeader title="Invoices" sub="Download any invoice as a PDF for your records and GST input credit" />
         <DataTable

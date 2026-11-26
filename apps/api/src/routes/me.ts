@@ -6,7 +6,7 @@ import { v } from "../lib/validate";
 import { badRequest, forbidden } from "../lib/errors";
 import { audit } from "../lib/audit";
 import { provisionTenant } from "../services/provisioning";
-import { loadFlags } from "../services/flags";
+import { activeAddons, loadFlags } from "../services/flags";
 import { activeAccess } from "../services/support";
 import { companyCreateSchema, evaluateFlags, readTwoFactorPolicy, twoFactorRequired } from "@hrms/shared";
 
@@ -57,13 +57,14 @@ meRoutes.get("/", async (c) => {
   // platform support: running read-only sessions show up as extra (view-only) companies
   const support = staff?.status === "active" ? await activeAccess(db, s.userId) : [];
   const supportTenants = support.length ? await db.select({ id: tenants.id, name: tenants.name, code: tenants.code, status: tenants.status, plan: tenants.plan }).from(tenants) : [];
+  const addonsByTenant = await activeAddons(db, [...rows.map((r) => r.tenantId), ...supportTenants.map((t) => t.id)]);
   return c.json({
     user: { id: s.userId, name: s.name, email: s.email, twoFactorEnabled: s.twoFactorEnabled, emailVerified: !!u?.emailVerified },
     // a verified sign-up with no company yet goes on to create one
     canCreateCompany: !!u?.emailVerified && !rows.length && staff?.status !== "active",
     supportSessions: support.map((a) => {
       const t = supportTenants.find((x) => x.id === a.access.tenantId)!;
-      return { tenantId: t.id, tenantName: t.name, tenantCode: t.code, tenantStatus: t.status, plan: t.plan, features: evaluateFlags(flags, { id: t.id, plan: t.plan }), ticketId: a.access.ticketId, ticketNumber: a.number, accessId: a.access.id, expiresAt: a.access.expiresAt };
+      return { tenantId: t.id, tenantName: t.name, tenantCode: t.code, tenantStatus: t.status, plan: t.plan, features: evaluateFlags(flags, { id: t.id, plan: t.plan }, addonsByTenant.get(t.id)), ticketId: a.access.ticketId, ticketNumber: a.number, accessId: a.access.id, expiresAt: a.access.expiresAt };
     }),
     platformRole: staff?.status === "active" ? staff.role : null,
     // which site this is, so platform staff know whose customers they're looking at
@@ -87,7 +88,7 @@ meRoutes.get("/", async (c) => {
         timeZone: r.timeZone ?? "Asia/Kolkata",
         currency: r.currency ?? "INR",
         country: r.country ?? "IN",
-        features: evaluateFlags(flags, { id: r.tenantId, plan: r.plan }),
+        features: evaluateFlags(flags, { id: r.tenantId, plan: r.plan }, addonsByTenant.get(r.tenantId)),
         twoFactorRequired: twoFactorRequired(readTwoFactorPolicy(r.settings), !!r.roleId),
       })),
   });

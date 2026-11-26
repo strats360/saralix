@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql, type SQL } from "drizzle-orm";
-import { invoices, memberships, platformSettings, plans, tenants } from "@hrms/db";
-import { billingRunSchema, DEFAULT_DUNNING, dunningStage, fmtMoney, invoicePaymentSchema, invoicingEntitySchema, planSchema, STATE_BY_CODE, tenantBillingSchema, todayLocal } from "@hrms/shared";
+import { addons, invoices, memberships, platformSettings, plans, tenantAddons, tenants } from "@hrms/db";
+import { addonCharge, addonSchema, billingRunSchema, DEFAULT_DUNNING, dunningStage, fmtMoney, invoicePaymentSchema, invoicingEntitySchema, planSchema, STATE_BY_CODE, tenantBillingSchema, todayLocal } from "@hrms/shared";
 import { z } from "zod";
 import type { AppEnv } from "../env";
 import { requirePerm, requirePlatform } from "../lib/context";
@@ -327,4 +327,75 @@ tenantBillingRoutes.patch("/details", requirePerm("billing", "edit"), v("json", 
   const [row] = await c.get("db").update(tenants).set({ billingEmail: c.req.valid("json").billingEmail }).where(eq(tenants.id, tid(c))).returning();
   await audit(c, { action: "billing.details", entity: "tenant", entityId: tid(c), summary: `Billing email set to ${row?.billingEmail ?? "the contact email"}` });
   return c.json({ billingEmail: row?.billingEmail ?? null });
+});
+
+/* ---------------- paid add-ons ---------------- */
+
+/** Switch an add-on on or off for a company. Turning it off keeps the history for billing. */
+async function setAddon(c: Context<AppEnv>, tenantId: string, key: string, on: boolean) {
+  const db = c.get("db");
+  const [a] = await db.select().from(addons).where(eq(addons.key, key));
+  if (!a) throw notFound("Add-on");
+  const [cur] = await db.select().from(tenantAddons).where(and(eq(tenantAddons.tenantId, tenantId), eq(tenantAddons.addonKey, key), sql`${tenantAddons.endedAt} is null`));
+  if (on) {
+    if (cur) return { changed: false };
+    if (!a.active) throw badRequest("This add-on isn't available right now");
+    await db.insert(tenantAddons).values({ tenantId, addonKey: key, startedBy: c.get("session")!.userId });
+  } else {
+    if (!cur) return { changed: false };
+    await db.update(tenantAddons).set({ endedAt: new Date(), endedBy: c.get("session")!.userId }).where(eq(tenantAddons.id, cur.id));
+  }
+  await audit(c, { tenantId, action: on ? "addon.on" : "addon.off", entity: "tenant", entityId: tenantId, summary: `${on ? "Switched on" : "Switched off"} the ${a.name} add-on` });
+  return { changed: true };
+}
+
+/** The add-ons a company can buy, which are on, and what each would add to the monthly bill. */
+tenantBillingRoutes.get("/addons", requirePerm("billing", "view"), async (c) => {
+  const db = c.get("db");
+  const tid = c.get("tenant").tenantId;
+  const [cat, mine, counts, [t]] = await Promise.all([
+    db.select().from(addons).orderBy(asc(addons.sortOrder)),
+    db.select().from(tenantAddons).where(and(eq(tenantAddons.tenantId, tid), sql`${tenantAddons.endedAt} is null`)),
+    activeEmployeeCounts(db, [tid]),
+    db.select({ status: tenants.status, plan: tenants.plan, trialEndsAt: tenants.trialEndsAt }).from(tenants).where(eq(tenants.id, tid)),
+  ]);
+  const seats = counts.get(tid) ?? 0;
+  const on = new Map(mine.map((m) => [m.addonKey, m]));
+  const entity = await getEntity(db);
+  return c.json({
+    currency: entity.currency,
+    seats,
+    trial: t?.status === "trial" || t?.plan === "trial",
+    addons: cat.filter((a) => a.active || on.has(a.key)).map((a) => ({ key: a.key, name: a.name, description: a.description, pricing: a.pricing, price: Number(a.price), on: on.has(a.key), since: on.get(a.key)?.startedAt ?? null, monthly: addonCharge({ pricing: a.pricing, price: Number(a.price) }, seats) })),
+  });
+});
+
+tenantBillingRoutes.post("/addons/:key", requirePerm("billing", "edit"), v("json", z.object({ on: z.boolean() })), async (c) => c.json(await setAddon(c, c.get("tenant").tenantId, c.req.param("key"), c.req.valid("json").on)));
+
+platformBillingRoutes.get("/addons", async (c) => {
+  const db = c.get("db");
+  const cat = await db.select().from(addons).orderBy(asc(addons.sortOrder));
+  const used = await db.select({ k: tenantAddons.addonKey, n: sql<number>`count(*)::int` }).from(tenantAddons).where(sql`${tenantAddons.endedAt} is null`).groupBy(tenantAddons.addonKey);
+  const n = new Map(used.map((u) => [u.k, u.n]));
+  return c.json(cat.map((a) => ({ ...a, price: Number(a.price), companies: n.get(a.key) ?? 0 })));
+});
+
+platformBillingRoutes.put("/addons/:key", requirePlatform("super_admin"), v("json", addonSchema), async (c) => {
+  const b = c.req.valid("json");
+  const [row] = await c.get("db").update(addons).set({ ...b, updatedAt: new Date() }).where(eq(addons.key, c.req.param("key"))).returning();
+  if (!row) throw notFound("Add-on");
+  await audit(c, { action: "addon.update", entity: "addon", entityId: row.key, summary: `Set the ${row.name} add-on to ${b.pricing === "flat" ? `${b.price} a month` : `${b.price} per employee a month`}${b.active ? "" : ", not on sale"}` });
+  return c.json({ ok: true });
+});
+
+/** Which add-ons a company has, for the tenant page in the console. */
+platformBillingRoutes.get("/tenants/:id/addons", async (c) => {
+  const rows = await c.get("db").select().from(tenantAddons).where(eq(tenantAddons.tenantId, c.req.param("id"))).orderBy(desc(tenantAddons.startedAt));
+  return c.json(rows);
+});
+
+platformBillingRoutes.post("/tenants/:id/addons/:key", requirePlatform("super_admin", "finance"), v("json", z.object({ on: z.boolean() })), async (c) => {
+  const [t] = await c.get("db").select({ id: tenants.id }).from(tenants).where(eq(tenants.id, c.req.param("id")));
+  if (!t) throw notFound("Company");
+  return c.json(await setAddon(c, t.id, c.req.param("key"), c.req.valid("json").on));
 });

@@ -169,3 +169,34 @@ export const billingMandates = pgTable(
   },
   (t) => [uniqueIndex("billing_mandates_sub_uq").on(t.subscriptionId), index("billing_mandates_tenant_idx").on(t.tenantId, t.status)],
 );
+
+/** Paid add-ons the platform sells on top of plans. */
+export const addons = pgTable("addons", {
+  key: text("key").primaryKey(), // addon.ai_assistant and so on
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  pricing: text("pricing").notNull().default("per_employee"), // per_employee | flat
+  price: money("price").notNull(),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  ...timestamps,
+});
+
+/** A company's add-ons: when each was switched on, and off. */
+export const tenantAddons = pgTable(
+  "tenant_addons",
+  {
+    id: id(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    addonKey: text("addon_key")
+      .notNull()
+      .references(() => addons.key),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    startedBy: text("started_by"),
+    endedBy: text("ended_by"),
+  },
+  (t) => [index("tenant_addons_tenant_idx").on(t.tenantId, t.addonKey), uniqueIndex("tenant_addons_active_uq").on(t.tenantId, t.addonKey).where(sql`${t.endedAt} is null`)],
+);
