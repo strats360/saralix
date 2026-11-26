@@ -14,7 +14,7 @@ export const flagRoutes = new Hono<AppEnv>();
 flagRoutes.use("*", requirePlatform());
 
 /** The running version. Keep it the same as package.json and the latest CHANGELOG.md entry (a test checks). */
-export const RELEASE = { version: "1.2.1", name: "Stale tabs reload after a deploy, and a Saralix error page" };
+export const RELEASE = { version: "1.3.0", name: "Engagement, company KYC, and OKRs, feedback and 1:1s" };
 
 flagRoutes.get("/", async (c) => {
   const db = c.get("db");

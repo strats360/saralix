@@ -6,6 +6,24 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
+Nothing yet.
+
+### Planned
+
+These need something from us before they can be built or switched on:
+
+- Zoho Books push of the payroll journal (a Zoho API client ID and secret).
+- WhatsApp payslips (a WhatsApp Business provider account and an approved template).
+- Live bank payouts for salary (a payout partner such as Cashfree Payouts, RazorpayX, ICICI or HDFC).
+- Native mobile apps (Apple Developer and Google Play accounts).
+- State minimum wage tables by zone and skill, and an ESI and PT check against a second source (network access to hrengage.ai).
+- A staging site, and the Gulf, Saudi, UK, US and Canada sites (a Neon database and GitHub environment for each). The country packs are already built.
+- Expert review of the golden payroll files and of the flexible benefit caps.
+
+## [1.3.0] - 2026-11-26
+
+Engagement, company KYC, and OKRs, feedback and 1:1s.
+
 ### Added
 
 - Engagement: pulse checks, polls and surveys with five answer types (1 to 5 rating, 0 to 10 recommend score for eNPS, one choice, several choices, written). Start from scratch or from a template (eNPS, monthly pulse, quick poll, new joiner check in), pick who it's for, set a closing date, and send it. People get an email and a reminder the day before it closes; it closes on its own.
@@ -29,18 +47,6 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 ### Changed
 
 - Companies that already exist, the demo and companies the platform team creates count as verified, so nothing changes for them.
-
-### Planned
-
-These need something from us before they can be built or switched on:
-
-- Zoho Books push of the payroll journal (a Zoho API client ID and secret).
-- WhatsApp payslips (a WhatsApp Business provider account and an approved template).
-- Live bank payouts for salary (a payout partner such as Cashfree Payouts, RazorpayX, ICICI or HDFC).
-- Native mobile apps (Apple Developer and Google Play accounts).
-- State minimum wage tables by zone and skill, and an ESI and PT check against a second source (network access to hrengage.ai).
-- A staging site, and the Gulf, Saudi, UK, US and Canada sites (a Neon database and GitHub environment for each). The country packs are already built.
-- Expert review of the golden payroll files and of the flexible benefit caps.
 
 ## [1.2.1] - 2026-11-26
 
@@ -131,7 +137,8 @@ The first release: the India site at app.saralix.com, with everything built so f
 - Reports, and free income tax and gratuity calculators at /tools.
 - Multi-country groundwork: country packs for the UAE, Saudi Arabia, Qatar, Kuwait, Oman, Bahrain, the UK, the US and Canada; a control plane with one sign in page; wave rollouts, monitoring, backups and restore drills.
 
-[Unreleased]: https://github.com/strats360/saralix/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/strats360/saralix/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/strats360/saralix/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/strats360/saralix/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/strats360/saralix/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/strats360/saralix/compare/v1.0.0...v1.1.0
