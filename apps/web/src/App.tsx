@@ -50,6 +50,7 @@ const router = createBrowserRouter([
     { path: "/signup", element: L(() => import("@/pages/auth/Signup")) },
     { path: "/signup/verify", element: L(() => import("@/pages/auth/VerifyEmail")) },
     { path: "/onboarding/:token", element: L(() => import("@/pages/auth/InviteAccept")) },
+    { path: "/kiosk", element: L(() => import("@/pages/kiosk/Kiosk")) },
     { path: "/careers/:slug", element: L(() => import("@/pages/careers/Careers")) },
     { path: "/careers/:slug/jobs/:id", element: L(() => import("@/pages/careers/Careers").then((m) => ({ default: m.CareersJob }))) },
     { path: "/invite/admin/:token", element: L(() => import("@/pages/auth/AdminInvite")) },
@@ -89,6 +90,7 @@ const router = createBrowserRouter([
             { path: "engagement", element: L(() => import("@/pages/ess/Engagement")) },
             { path: "learning", element: L(() => import("@/pages/ess/Learning")) },
             { path: "forms", element: L(() => import("@/pages/ess/Forms")) },
+            { path: "face", element: L(() => import("@/pages/ess/Face")) },
             { path: "forms/new/:formId", element: L(() => import("@/pages/ess/Forms").then((m) => ({ default: m.FillForm }))) },
             { path: "forms/:id", element: L(() => import("@/pages/ess/Forms").then((m) => ({ default: m.MyRequest }))) },
             { path: "learning/:id", element: L(() => import("@/pages/ess/Learning").then((m) => ({ default: m.CoursePlayer }))) },
@@ -170,6 +172,7 @@ const router = createBrowserRouter([
                 { path: "policies", element: L(() => import("@/pages/admin/attendance/Policies")) },
                 { path: "roster", element: L(() => import("@/pages/admin/attendance/Roster")) },
                 { path: "timesheets", element: L(() => import("@/pages/admin/attendance/Timesheets")) },
+                { path: "kiosk", element: L(() => import("@/pages/admin/attendance/FaceKiosk")) },
               ],
             },
             {

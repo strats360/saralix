@@ -442,6 +442,13 @@
       "when": 1795767796019,
       "tag": "0062_workflows",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1795794665444,
+      "tag": "0063_face_kiosk",
+      "breakpoints": true
     }
   ]
 }

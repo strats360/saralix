@@ -64,6 +64,7 @@ export default function AttendanceLayout() {
           ...(has("module.timesheets") ? [{ to: "/attendance/timesheets", label: "Timesheets" }] : []),
           { to: "/attendance/corrections", label: "Corrections" },
           { to: "/attendance/policies", label: "Policies & shifts" },
+          ...(has("addon.face_kiosk") && can("attendance", "configure") ? [{ to: "/attendance/kiosk", label: "Face kiosk" }] : []),
         ]}
       />
       <Outlet />

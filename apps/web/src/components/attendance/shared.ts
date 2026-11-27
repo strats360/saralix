@@ -22,6 +22,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   web: "Web",
   mobile: "Mobile",
   biometric: "Biometric",
+  kiosk: "Face kiosk",
   gps: "GPS",
   ip: "Office IP",
   wfh: "WFH",

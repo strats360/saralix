@@ -156,6 +156,7 @@ export default function EssHomePage() {
       <SurveyNotice />
       <LearningNotice />
       <FormsNotice />
+      <FaceNotice />
       <InterviewNotice />
       <TimesheetNotice />
       <AnnouncementsCard />
@@ -400,4 +401,12 @@ function FormsNotice() {
       </Notice>
     );
   return q.data.forms.length ? <Link to="/me/forms" className="text-[13px] xl:hidden">Forms and requests</Link> : null;
+}
+
+/** A nudge to set up face punch when the company has a kiosk. */
+function FaceNotice() {
+  const { has } = useSession();
+  const q = useQuery({ queryKey: ["face", "mine"], queryFn: () => api.get<{ enrolled: boolean }>("/ess/face"), enabled: has("addon.face_kiosk"), staleTime: 300_000 });
+  if (!has("addon.face_kiosk") || !q.data) return null;
+  return <Link to="/me/face" className={`text-[13px] ${q.data.enrolled ? "xl:hidden" : ""}`}>{q.data.enrolled ? "Face punch" : "Set up face punch for the attendance kiosk"}</Link>;
 }

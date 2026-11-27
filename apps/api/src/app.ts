@@ -10,6 +10,7 @@ import { oneOnOneRoutes } from "./routes/one-on-ones";
 import { essTravelRoutes, travelRoutes } from "./routes/travel";
 import { essLearningRoutes, learningRoutes } from "./routes/learning";
 import { essFormRoutes, formRoutes } from "./routes/workflows";
+import { essFaceRoutes, faceKioskRoutes, kioskPublicRoutes } from "./routes/face-kiosk";
 import { essTimesheetRoutes, timesheetRoutes } from "./routes/timesheets";
 import { assetRoutes, essAssetRoutes } from "./routes/assets";
 import { careersRoutes, myInterviewRoutes, recruitmentRoutes } from "./routes/recruitment";
@@ -152,6 +153,7 @@ export function buildApp() {
   api.use("*", loadSession);
   api.route("/public/payments", cashfreeWebhook);
   api.route("/public/attendance", devicePunchRoutes);
+  api.route("/public/kiosk", kioskPublicRoutes);
   api.route("/v1", v1Routes);
   api.route("/public/careers", careersRoutes);
   api.route("/public", publicRoutes);
@@ -197,6 +199,8 @@ export function buildApp() {
   t.use("/admin/learning/*", requireFeature("module.learning"));
   t.use("/ess/forms/*", requireFeature("addon.workflows"));
   t.use("/admin/forms/*", requireFeature("addon.workflows"));
+  t.use("/ess/face/*", requireFeature("addon.face_kiosk"));
+  t.use("/admin/face-kiosk/*", requireFeature("addon.face_kiosk"));
   t.use("/ess/helpdesk/*", requireFeature("module.helpdesk"));
   t.use("/admin/helpdesk/*", requireFeature("module.helpdesk"));
   t.use("/admin/attendance/timesheets/*", requireFeature("module.timesheets"));
@@ -231,6 +235,7 @@ export function buildApp() {
   t.route("/ess/engagement", essEngagementRoutes);
   t.route("/ess/learning", essLearningRoutes);
   t.route("/ess/forms", essFormRoutes);
+  t.route("/ess/face", essFaceRoutes);
   t.route("/ess/helpdesk", essHelpdeskRoutes);
   t.route("/ess", essRoutes);
   t.route("/ess", essExitRoutes);
@@ -253,6 +258,7 @@ export function buildApp() {
   t.route("/admin/engagement", engagementRoutes);
   t.route("/admin/learning", learningRoutes);
   t.route("/admin/forms", formRoutes);
+  t.route("/admin/face-kiosk", faceKioskRoutes);
   t.route("/admin/helpdesk", helpdeskRoutes);
   t.use("/admin/*", requireAdmin);
   t.route("/admin/kyc", kycRoutes);

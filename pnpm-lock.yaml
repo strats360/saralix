@@ -105,6 +105,9 @@ importers:
       '@tesseract.js-data/eng':
         specifier: 1.0.0
         version: 1.0.0
+      '@vladmandic/face-api':
+        specifier: 1.7.15
+        version: 1.7.15
       better-auth:
         specifier: ^1.7.18
         version: 1.7.18(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@cloudflare/workers-types@5.20261104.1)(kysely@0.29.8)(postgres@4.0.0))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@types/node@26.6.6)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))
@@ -1724,6 +1727,10 @@ packages:
 
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
+
+  '@vladmandic/face-api@1.7.15':
+    resolution: {integrity: sha512-WDMmK3CfNLo8jylWqMoQgf4nIst3M0fzx1dnac96wv/dvMTN4DxC/Pq1DGtduDk1lktCamQ3MIDXFnvrdHTXDw==}
+    engines: {node: '>=14.0.0'}
 
   aria-hidden@1.2.6:
     resolution: {integrity: sha512-ik3ZgC9dY/lYVVM++OISsaYDeg1tb0VtP5uL3ouh1koGOaUMDPpbFIei4JkFimWUFPn90sbMNMXQAIVOlnYKJA==}
@@ -3751,6 +3758,8 @@ snapshots:
       '@vitest/pretty-format': 3.2.7
       loupe: 3.2.1
       tinyrainbow: 2.0.0
+
+  '@vladmandic/face-api@1.7.15': {}
 
   aria-hidden@1.2.6:
     dependencies:

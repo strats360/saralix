@@ -39,6 +39,7 @@ export * from "./receipts";
 export * from "./travel";
 export * from "./learning";
 export * from "./workflows";
+export * from "./face";
 export * from "./helpdesk";
 export * from "./countries";
 export * from "./formula";

@@ -11,3 +11,4 @@ coverage
 apps/api/wrangler.deploy.json
 apps/control/wrangler.deploy.json
 apps/web/public/ocr/
+apps/web/public/face/

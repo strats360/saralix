@@ -38,6 +38,7 @@ import {
   user,
   type Database,
 } from "@hrms/db";
+import { faceTemplates, kioskEvents } from "@hrms/db";
 import { COMPANY_ISSUED_DOCS, DEFAULT_PRIVACY, ERASED_DATA, KEPT_DATA, todayLocal, type PrivacySettings } from "@hrms/shared";
 import type { Env } from "../env";
 import { deleteFile, getFile, safeName } from "../lib/storage";
@@ -204,6 +205,13 @@ export async function eraseEmployee(db: Database, env: Env, tenantId: string, em
     .where(and(eq(attendanceRecords.employeeId, e.id), or(isNotNull(attendanceRecords.lat), isNotNull(attendanceRecords.checkOutLat), isNotNull(attendanceRecords.ip), isNotNull(attendanceRecords.checkInSelfieKey), isNotNull(attendanceRecords.checkOutSelfieKey))))
     .returning({ id: attendanceRecords.id });
   summary.punchLocations = located.length;
+
+  // face kiosk: the enrolled face and the photos the kiosk took
+  summary.face = (await db.delete(faceTemplates).where(eq(faceTemplates.employeeId, e.id)).returning({ id: faceTemplates.id })).length;
+  const shots = await db.select({ id: kioskEvents.id, key: kioskEvents.photoKey }).from(kioskEvents).where(and(eq(kioskEvents.employeeId, e.id), isNotNull(kioskEvents.photoKey)));
+  for (const k of shots) await deleteFile(env, k.key!).catch(() => {});
+  if (shots.length) await db.update(kioskEvents).set({ photoKey: null }).where(inArray(kioskEvents.id, shots.map((k) => k.id)));
+  summary.kioskPhotos = shots.length;
 
   summary.onboarding = (await db.delete(onboardingInvites).where(eq(onboardingInvites.employeeId, e.id)).returning({ id: onboardingInvites.id })).length;
 

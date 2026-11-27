@@ -4,6 +4,7 @@ import { buildApp } from "./app";
 import { runScheduled } from "./services/jobs";
 import { runHourly } from "./services/announcements";
 import { runLearningReminders } from "./routes/learning";
+import { purgeKioskPhotos } from "./routes/face-kiosk";
 
 const app = buildApp();
 const HOURLY = "0 * * * *";
@@ -19,6 +20,6 @@ export default {
   /** Cron Triggers: the daily jobs at 10:00 IST, and an hourly run for scheduled announcements. */
   async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
     setLocalDefaults({ timeZone: env.DEFAULT_TIME_ZONE, currency: env.DEFAULT_CURRENCY });
-    ctx.waitUntil(event.cron === HOURLY ? Promise.all([runHourly(env), runLearningReminders(env)]) : runScheduled(env));
+    ctx.waitUntil(event.cron === HOURLY ? Promise.all([runHourly(env), runLearningReminders(env), purgeKioskPhotos(env)]) : runScheduled(env));
   },
 } satisfies ExportedHandler<Env>;

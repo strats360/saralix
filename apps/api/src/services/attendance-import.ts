@@ -194,12 +194,10 @@ export interface PunchIn {
  * nothing. A day HR entered or corrected by hand is kept as it is, and a month with an
  * approved payroll isn't touched.
  */
-export async function ingestPunches(db: Database, device: typeof attendanceDevices.$inferSelect, punches: PunchIn[]) {
+export async function ingestPunches(db: Database, device: typeof attendanceDevices.$inferSelect, punches: PunchIn[], source: "biometric" | "kiosk" = "biometric") {
   const tenantId = device.tenantId;
   const emps = await employeeLookup(db, tenantId);
-  const shiftOf = await shiftResolver(db, tenantId);
   const zoneOf = await entityZones(db, tenantId);
-  const locked = await lockedMonths(db, tenantId);
   const unknown = new Set<string>();
   const invalid: string[] = [];
   const rows: (typeof attendancePunches.$inferInsert)[] = [];
@@ -225,8 +223,26 @@ export async function ingestPunches(db: Database, device: typeof attendanceDevic
   }
 
   // recompute the days these punches touch
+  const { updated, skipped } = await recomputeDays(db, tenantId, rows.map((r) => ({ empId: r.employeeId, date: r.date })), source);
+  const last = rows.reduce<Date | null>((m, r) => (!m || (r.punchedAt as Date) > m ? (r.punchedAt as Date) : m), null);
+  await db
+    .update(attendanceDevices)
+    .set({ lastSeenAt: new Date(), punchCount: sql`${attendanceDevices.punchCount} + ${accepted}`, ...(last && (!device.lastPunchAt || last > device.lastPunchAt) ? { lastPunchAt: last } : {}) })
+    .where(eq(attendanceDevices.id, device.id));
+  return { received: punches.length, accepted, duplicates: rows.length - accepted, daysUpdated: updated, unknownUsers: [...unknown].slice(0, 50), invalid: invalid.slice(0, 50), skipped: skipped.slice(0, 50) };
+}
+
+/** Days made from punches; their times are all in the punch table already. */
+const DEVICE_SOURCES = new Set(["biometric", "kiosk"]);
+
+/** Works a day out again from its punches, for each employee and date given. */
+export async function recomputeDays(db: Database, tenantId: string, list: { empId: string; date: string }[], source: "biometric" | "kiosk" = "biometric") {
   const days = new Map<string, { empId: string; date: string }>();
-  for (const r of rows) days.set(`${r.employeeId}|${r.date}`, { empId: r.employeeId, date: r.date });
+  for (const r of list) days.set(`${r.empId}|${r.date}`, r);
+  const emps = await employeeLookup(db, tenantId);
+  const shiftOf = await shiftResolver(db, tenantId);
+  const zoneOf = await entityZones(db, tenantId);
+  const locked = await lockedMonths(db, tenantId);
   const byId = new Map([...emps.byCode.values()].map((e) => [e.id, e]));
   let updated = 0;
   const skipped: string[] = [];
@@ -242,21 +258,22 @@ export async function ingestPunches(db: Database, device: typeof attendanceDevic
       continue;
     }
     const times = (await db.select({ t: attendancePunches.punchedAt }).from(attendancePunches).where(and(eq(attendancePunches.tenantId, tenantId), eq(attendancePunches.employeeId, empId), eq(attendancePunches.date, date)))).map((x) => x.t.getTime());
-    if (cur?.checkIn) times.push(cur.checkIn.getTime());
-    if (cur?.checkOut) times.push(cur.checkOut.getTime());
+    if (!times.length) {
+      // the last punch was taken back: drop the day the punches made
+      if (cur && DEVICE_SOURCES.has(cur.source)) await db.delete(attendanceRecords).where(eq(attendanceRecords.id, cur.id));
+      updated++;
+      continue;
+    }
+    if (cur?.checkIn && !DEVICE_SOURCES.has(cur.source)) times.push(cur.checkIn.getTime());
+    if (cur?.checkOut && !DEVICE_SOURCES.has(cur.source)) times.push(cur.checkOut.getTime());
     const first = Math.min(...times);
     const last = Math.max(...times);
     const checkIn = new Date(first);
     // a single punch is an arrival; a second one at least a minute later is the departure
     const checkOut = last - first >= 60_000 ? new Date(last) : null;
     const ev = evaluateAttendance(shiftOf(emp.shiftId), checkIn, checkOut, { wfh: cur?.status === "wfh", timeZone: zoneOf(emp.entityId) });
-    await upsertAttendance(db, { tenantId, employeeId: empId, date, checkIn, checkOut, source: "biometric", status: ev.status, workMinutes: ev.workMinutes, lateMinutes: ev.lateMinutes, earlyMinutes: ev.earlyMinutes, overtimeMinutes: ev.overtimeMinutes, note: cur?.note ?? null, isManual: false });
+    await upsertAttendance(db, { tenantId, employeeId: empId, date, checkIn, checkOut, source, status: ev.status, workMinutes: ev.workMinutes, lateMinutes: ev.lateMinutes, earlyMinutes: ev.earlyMinutes, overtimeMinutes: ev.overtimeMinutes, note: cur?.note ?? null, isManual: false });
     updated++;
   }
-  const last = rows.reduce<Date | null>((m, r) => (!m || (r.punchedAt as Date) > m ? (r.punchedAt as Date) : m), null);
-  await db
-    .update(attendanceDevices)
-    .set({ lastSeenAt: new Date(), punchCount: sql`${attendanceDevices.punchCount} + ${accepted}`, ...(last && (!device.lastPunchAt || last > device.lastPunchAt) ? { lastPunchAt: last } : {}) })
-    .where(eq(attendanceDevices.id, device.id));
-  return { received: punches.length, accepted, duplicates: rows.length - accepted, daysUpdated: updated, unknownUsers: [...unknown].slice(0, 50), invalid: invalid.slice(0, 50), skipped: skipped.slice(0, 50) };
+  return { updated, skipped };
 }

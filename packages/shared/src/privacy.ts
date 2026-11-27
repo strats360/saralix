@@ -35,7 +35,7 @@ export const ERASED_DATA = [
   "Contact details: personal email, phone, addresses (except the permanent address on tax forms), emergency contact",
   "Personal details: date of birth, marital status, blood group, Aadhaar last 4 digits",
   "Bank account details on the profile",
-  "Profile photo, punch selfies and punch locations",
+  "Profile photo, punch selfies and punch locations, the face enrolled for the kiosk and the photos it took",
   "Uploaded documents such as ID proofs, resume and certificates",
   "Onboarding answers, and the sign-in for this company",
 ];

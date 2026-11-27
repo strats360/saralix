@@ -186,6 +186,11 @@ export const attendanceDevices = pgTable(
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     lastPunchAt: timestamp("last_punch_at", { withTimezone: true }),
     punchCount: integer("punch_count").notNull().default(0),
+    /** biometric: a machine that pushes punches; kiosk: the face kiosk page on a tablet or phone. */
+    kind: text("kind").notNull().default("biometric"),
+    /** One-time code to pair a kiosk, hashed, and when it stops working. */
+    pairCodeHash: text("pair_code_hash"),
+    pairExpiresAt: timestamp("pair_expires_at", { withTimezone: true }),
     createdBy: text("created_by"),
     ...timestamps,
   },

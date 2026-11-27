@@ -56,7 +56,7 @@ export const ATTENDANCE_CODES: Record<AttendanceStatus, string> = {
   wfh: "W",
 };
 
-export const ATTENDANCE_SOURCES = ["web", "mobile", "biometric", "gps", "ip", "wfh", "manual", "import"] as const;
+export const ATTENDANCE_SOURCES = ["web", "mobile", "biometric", "kiosk", "gps", "ip", "wfh", "manual", "import"] as const;
 export const REQUEST_STATUSES = ["pending", "approved", "rejected", "cancelled"] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
