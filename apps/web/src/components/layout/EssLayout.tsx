@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { queuedPunches, sendQueuedPunches } from "@/lib/offline";
 import { useOnline } from "@/lib/pwa";
-import { CalendarDays, Clock, Home, LayoutDashboard, LogOut, PartyPopper, Percent, ShieldCheck, LifeBuoy, Receipt, Target, User, Wallet } from "lucide-react";
+import { CalendarDays, Clock, GraduationCap, Home, LayoutDashboard, LogOut, PartyPopper, Percent, ShieldCheck, LifeBuoy, Receipt, Target, User, Wallet } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./Header";
@@ -24,6 +24,7 @@ const TABS = [
   { to: "/me/reviews", label: "Performance", icon: Target, feature: "module.performance", phone: false },
   // desktop puts these under "More" so the bar fits next to the admin console button
   { to: "/me/engagement", label: "Kudos", icon: PartyPopper, feature: "module.engagement", phone: false, more: true },
+  { to: "/me/learning", label: "Learning", icon: GraduationCap, feature: "module.learning", phone: false, more: true },
   { to: "/me/helpdesk", label: "Help", icon: LifeBuoy, feature: "module.helpdesk", phone: false, more: true },
   { to: "/me/committees", label: "Concerns", icon: ShieldCheck, phone: false, more: true },
   { to: "/me/profile", label: "Profile", icon: User },

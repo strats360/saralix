@@ -154,6 +154,7 @@ export default function EssHomePage() {
       <InstallCard />
       <ReviewNotice />
       <SurveyNotice />
+      <LearningNotice />
       <InterviewNotice />
       <TimesheetNotice />
       <AnnouncementsCard />
@@ -367,4 +368,20 @@ function HelpCard() {
   ) : (
     <Link to="/me/helpdesk" className="text-[13px]">Need help? Ask HR, IT or Finance{open ? ` · ${open} open ticket${open === 1 ? "" : "s"}` : ""}</Link>
   );
+}
+
+/** Courses and policies still to do, and the way to Learning on phones. */
+function LearningNotice() {
+  const { has } = useSession();
+  const q = useQuery({ queryKey: ["learning", "mine"], queryFn: () => api.get<{ id: string; title: string; state: string; dueOn: string }[]>("/ess/learning"), enabled: has("module.learning"), staleTime: 60_000 });
+  if (!has("module.learning") || !q.data?.length) return null;
+  const todo = q.data.filter((i) => i.state !== "completed");
+  if (todo.length)
+    return (
+      <Notice tone={todo.some((i) => i.state === "overdue") ? "warn" : "sel"}>
+        {todo.length === 1 ? `"${todo[0]!.title}" is due ${fmtDate(todo[0]!.dueOn)}. ` : `You have ${todo.length} courses or policies to finish. `}
+        <Link to={todo.length === 1 ? `/me/learning/${todo[0]!.id}` : "/me/learning"} style={{ color: "inherit", textDecoration: "underline" }}>Open</Link>
+      </Notice>
+    );
+  return <Link to="/me/learning" className="text-[13px] xl:hidden">Learning</Link>;
 }

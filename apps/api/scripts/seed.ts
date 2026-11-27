@@ -52,6 +52,7 @@ import { calculateRun, defaultPayDate, monthBounds } from "../src/services/payro
 import { payrollItems, payrollRuns, statutoryChallans, taxDeclarations, tdsReturns, user } from "@hrms/db";
 import { inArray } from "drizzle-orm";
 import { dueDate, objectiveProgress, periodOf } from "@hrms/shared";
+import { courseEnrollments, courses } from "@hrms/db";
 import { obligationsForRun } from "../src/routes/compliance";
 import { reimbursementCategories, reimbursementClaims } from "@hrms/db";
 import { initialStatus, settleClaims } from "../src/services/reimbursements";
@@ -119,6 +120,7 @@ async function main() {
     await seedEngagement(existing.id);
     await seedOkrs(existing.id);
     await seedFeedback(existing.id);
+    await seedLearning(existing.id);
     if (!DEMO) await seedBilling(existing.id);
     console.log(added ? `Added ${added} months of payroll history to the existing demo tenant.` : "Demo tenant already exists. To reseed, drop and recreate the database, then run migrations.");
     await db.$client.end();
@@ -442,6 +444,7 @@ async function main() {
   await seedEngagement(tid);
   await seedOkrs(tid);
   await seedFeedback(tid);
+  await seedLearning(tid);
   if (DEMO) await db.update(tenants).set({ settings: sql`${tenants.settings} || '{"demo": true}'::jsonb` }).where(eq(tenants.id, tid));
   else await seedBilling(tid);
   console.log(`Payroll history: ${months} locked months`);
@@ -473,6 +476,39 @@ async function seedFeedback(tid: string) {
     { tenantId: tid, kind: "request", aboutEmployeeId: e("STL-0078"), fromEmployeeId: e("STL-0042"), requestedByName: "Jignesh Parmar", prompt: "Was my code review feedback useful this month?", status: "requested", createdAt: at(1) },
   ]);
   console.log("Feedback: 3 examples");
+}
+
+/** A POSH course with a quiz and a leave policy to confirm, with some people already done. */
+async function seedLearning(tid: string) {
+  const [any] = await db.select({ id: courses.id }).from(courses).where(eq(courses.tenantId, tid)).limit(1);
+  if (any) return;
+  const at = (d: number) => new Date(new Date(`${today}T06:00:00Z`).getTime() - d * 86_400_000);
+  const day = (d: number) => at(d).toISOString().slice(0, 10);
+  const [posh, policy] = await db
+    .insert(courses)
+    .values([
+      {
+        tenantId: tid, kind: "course", title: "POSH basics", description: "Ten minutes on what sexual harassment at work is, and how to raise a concern. Everyone does this once a year.", status: "published", publishedAt: at(10), dueDays: 30, passMark: 70,
+        lessons: [
+          { id: "l1", title: "What counts as harassment", body: "Sexual harassment is any unwelcome conduct of a sexual nature. It can be physical, verbal or written, and it can happen online too.\n\nWhat matters is how it was received, not what was meant.", videoUrl: null },
+          { id: "l2", title: "How to raise a concern", body: "Talk to any member of the Internal Committee, or raise it from Concerns in the app. You can do it in confidence.\n\nThe committee must finish its inquiry within 90 days.", videoUrl: null },
+        ],
+        quiz: [
+          { id: "q1", question: "What decides whether conduct is harassment?", options: ["What the person meant", "How it was received", "Whether it happened at the office"], answer: 1 },
+          { id: "q2", question: "How long does the committee have to finish an inquiry?", options: ["30 days", "90 days", "1 year"], answer: 1 },
+        ],
+      },
+      { tenantId: tid, kind: "policy", title: "Leave policy 2026", description: "How leave works here: types, carry forward and how to apply.", status: "published", publishedAt: at(5), dueDays: 14, lessons: [{ id: "policy", title: "The policy", body: "You get 18 days of earned leave and 12 days of casual and sick leave each year.\n\nUp to 30 earned leave days carry forward. Apply from Leave in the app at least a week ahead for planned time off.", videoUrl: null }] },
+    ])
+    .returning();
+  const emp = await db.select({ id: employees.id }).from(employees).where(and(eq(employees.tenantId, tid), eq(employees.status, "active")));
+  await db.insert(courseEnrollments).values(
+    emp.flatMap((e, i) => [
+      { tenantId: tid, courseId: posh!.id, employeeId: e.id, dueOn: day(-20), ...(i % 3 === 0 ? { startedAt: at(8), lessonsDone: ["l1", "l2"], attempts: 1, score: 100, completedAt: at(7) } : i % 3 === 1 ? { startedAt: at(2), lessonsDone: ["l1"] } : {}) },
+      { tenantId: tid, courseId: policy!.id, employeeId: e.id, dueOn: day(-9), ...(i % 2 === 0 ? { startedAt: at(4), completedAt: at(4) } : {}) },
+    ]),
+  );
+  console.log("Learning: a course and a policy");
 }
 
 /** This quarter's OKRs: two company objectives, team ones under them, and a personal one. */

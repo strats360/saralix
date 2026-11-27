@@ -8,6 +8,7 @@ import { essOkrRoutes, okrRoutes } from "./routes/okrs";
 import { essFeedbackRoutes, reviewFeedbackRoutes } from "./routes/feedback";
 import { oneOnOneRoutes } from "./routes/one-on-ones";
 import { essTravelRoutes, travelRoutes } from "./routes/travel";
+import { essLearningRoutes, learningRoutes } from "./routes/learning";
 import { essTimesheetRoutes, timesheetRoutes } from "./routes/timesheets";
 import { assetRoutes, essAssetRoutes } from "./routes/assets";
 import { careersRoutes, myInterviewRoutes, recruitmentRoutes } from "./routes/recruitment";
@@ -191,6 +192,8 @@ export function buildApp() {
   t.use("/admin/announcements/*", requireFeature("module.announcements"));
   t.use("/ess/engagement/*", requireFeature("module.engagement"));
   t.use("/admin/engagement/*", requireFeature("module.engagement"));
+  t.use("/ess/learning/*", requireFeature("module.learning"));
+  t.use("/admin/learning/*", requireFeature("module.learning"));
   t.use("/ess/helpdesk/*", requireFeature("module.helpdesk"));
   t.use("/admin/helpdesk/*", requireFeature("module.helpdesk"));
   t.use("/admin/attendance/timesheets/*", requireFeature("module.timesheets"));
@@ -223,6 +226,7 @@ export function buildApp() {
   t.route("/ess/timesheets", essTimesheetRoutes);
   t.route("/ess/announcements", essAnnouncementRoutes);
   t.route("/ess/engagement", essEngagementRoutes);
+  t.route("/ess/learning", essLearningRoutes);
   t.route("/ess/helpdesk", essHelpdeskRoutes);
   t.route("/ess", essRoutes);
   t.route("/ess", essExitRoutes);
@@ -243,6 +247,7 @@ export function buildApp() {
   t.route("/admin/contractors", contractorRoutes);
   t.route("/admin/announcements", announcementRoutes);
   t.route("/admin/engagement", engagementRoutes);
+  t.route("/admin/learning", learningRoutes);
   t.route("/admin/helpdesk", helpdeskRoutes);
   t.use("/admin/*", requireAdmin);
   t.route("/admin/kyc", kycRoutes);

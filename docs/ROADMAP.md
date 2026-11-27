@@ -14,7 +14,7 @@ What's next, grouped. It comes from a comparison with the popular Indian HRMS pr
 ## Next
 
 7. **Expenses and travel.** *Done, in Unreleased.* Read the amount, date and seller from a receipt photo; travel requests with approval, and advances settled against claims.
-8. **Learning.** Simple courses with lessons and quizzes, assigned by department or role, with completion tracking and policy read and acknowledge.
+8. **Learning.** *Done, in Unreleased.* Simple courses with lessons and quizzes, assigned by department or role, with completion tracking and policy read and acknowledge.
 9. **AI assistant (paid add-on).** Answers questions about leave, pay and policies, explains payslips and applies for leave. Sold per employee as an add-on to a plan, switched on per company.
 10. **Face kiosk (paid add-on).** A shared tablet at the entrance that matches faces for punches.
 11. **Forms and workflow builder (paid add-on).** Custom request forms with an approval workflow builder.
