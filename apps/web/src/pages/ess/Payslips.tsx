@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
+import { useSession } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { fmtDate, fmtMoney } from "@hrms/shared";
@@ -43,15 +44,17 @@ export default function EssPayslips() {
   });
   const loans = useQuery({ queryKey: ["ess", "loans"], queryFn: () => api.get<MyLoansData>("/ess/loans"), retry: false });
   const showLoans = !!loans.data && (loans.data.policy.requests || loans.data.rows.length > 0);
-  type View = "payslips" | "salary" | "loans";
+  type View = "payslips" | "salary" | "loans" | "tax";
   const wanted = params.get("view");
   const view: View = wanted === "salary" && salary.data ? "salary" : wanted === "loans" && showLoans ? "loans" : "payslips";
+  const navigate = useNavigate();
+  const { has } = useSession();
   const tabs =
     salary.data || showLoans ? (
       <PillTabs<View>
         value={view}
-        onChange={(v) => setParams(v === "payslips" ? {} : { view: v }, { replace: true })}
-        tabs={[{ value: "payslips", label: "Payslips" }, ...(salary.data ? [{ value: "salary" as const, label: "My salary" }] : []), ...(showLoans ? [{ value: "loans" as const, label: "Loans" }] : [])]}
+        onChange={(v) => (v === "tax" ? navigate("/me/tax") : setParams(v === "payslips" ? {} : { view: v }, { replace: true }))}
+        tabs={[{ value: "payslips", label: "Payslips" }, ...(salary.data ? [{ value: "salary" as const, label: "My salary" }] : []), ...(showLoans ? [{ value: "loans" as const, label: "Loans" }] : []), ...(has("module.tds") ? [{ value: "tax" as const, label: "Income tax" }] : [])]}
       />
     ) : null;
 

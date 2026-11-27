@@ -57,6 +57,11 @@ const AR: Record<string, string> = {
   // app frame
   "Employee self-service": "الخدمة الذاتية للموظف",
   "Admin console": "لوحة الإدارة",
+  "Your account": "حسابك",
+  "My profile": "ملفي الشخصي",
+  "Sign-in and security": "تسجيل الدخول والأمان",
+  "Dark mode": "الوضع الداكن",
+  "Light mode": "الوضع الفاتح",
   "Sign out": "تسجيل الخروج",
   Language: "اللغة",
   Notifications: "الإشعارات",

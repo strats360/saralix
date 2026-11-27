@@ -16,6 +16,8 @@ import { Form16View } from "@/components/tax/Form16View";
 import { monthLabel, printPayslip } from "@/components/payroll/Payslip";
 import { grid2, MoneyInput, SectionCard } from "@/components/tax/ess/fields";
 import { MyBenefits } from "@/components/fbp/MyBenefits";
+import { PillTabs } from "@/components/ui/tabs";
+import { useNavigate } from "react-router";
 
 type Regime = "new" | "old";
 interface TaxResp extends EmployeeTax {
@@ -170,6 +172,7 @@ export default function EssTax() {
           <option value={prevFy(currentFy)}>FY {prevFy(currentFy)}</option>
         </Select>
       </div>
+      <PayTabs />
 
       {/* 1. status */}
       <Card className="!gap-3">
@@ -605,4 +608,10 @@ function Form16Card({ currentFy }: { currentFy: string }) {
       </Dialog>
     </Card>
   );
+}
+
+/** Payslips and tax live under one Pay tab in the top bar. */
+function PayTabs() {
+  const navigate = useNavigate();
+  return <PillTabs value="tax" onChange={(v) => (v === "payslips" ? navigate("/me/payslips") : undefined)} tabs={[{ value: "payslips", label: "Payslips" }, { value: "tax", label: "Income tax" }]} />;
 }
