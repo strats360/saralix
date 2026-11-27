@@ -155,6 +155,7 @@ export default function EssHomePage() {
       <ReviewNotice />
       <SurveyNotice />
       <LearningNotice />
+      <FormsNotice />
       <InterviewNotice />
       <TimesheetNotice />
       <AnnouncementsCard />
@@ -384,4 +385,19 @@ function LearningNotice() {
       </Notice>
     );
   return <Link to="/me/learning" className="text-[13px] xl:hidden">Learning</Link>;
+}
+
+/** Requests waiting for my approval, and the way to Forms on phones. */
+function FormsNotice() {
+  const { has } = useSession();
+  const q = useQuery({ queryKey: ["forms", "mine"], queryFn: () => api.get<{ forms: unknown[]; toApprove: number }>("/ess/forms"), enabled: has("addon.workflows"), staleTime: 60_000 });
+  if (!has("addon.workflows") || !q.data) return null;
+  if (q.data.toApprove)
+    return (
+      <Notice tone="sel">
+        {q.data.toApprove === 1 ? "A request is waiting for your approval. " : `${q.data.toApprove} requests are waiting for your approval. `}
+        <Link to="/me/forms?tab=approve" style={{ color: "inherit", textDecoration: "underline" }}>Review</Link>
+      </Notice>
+    );
+  return q.data.forms.length ? <Link to="/me/forms" className="text-[13px] xl:hidden">Forms and requests</Link> : null;
 }

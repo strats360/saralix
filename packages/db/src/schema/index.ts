@@ -26,6 +26,7 @@ export * from "./feedback";
 export * from "./one-on-ones";
 export * from "./travel";
 export * from "./learning";
+export * from "./workflows";
 export * from "./helpdesk";
 export * from "./contractors";
 export * from "./fbp";

@@ -21,6 +21,7 @@ export const NOTIFICATION_KEYS = [
   "feedback",
   "one_on_ones",
   "learning",
+  "form_decision",
   "helpdesk_updates",
   "leave_to_approve",
   "comp_off_to_approve",
@@ -32,6 +33,7 @@ export const NOTIFICATION_KEYS = [
   "timesheets_to_approve",
   "helpdesk_queue",
   "privacy_requests",
+  "forms_to_approve",
 ] as const;
 export type NotificationKey = (typeof NOTIFICATION_KEYS)[number];
 
@@ -60,6 +62,7 @@ export const NOTIFICATIONS: NotificationDef[] = [
   { key: "kudos_received", group: "self", label: "Kudos for you", description: "When a colleague gives you kudos." },
   { key: "feedback", group: "self", label: "Feedback", description: "When someone asks you for feedback, answers your request, or gives you feedback." },
   { key: "one_on_ones", group: "self", label: "1:1 meetings", description: "When your manager or someone on your team books a 1:1 with you, or moves it." },
+  { key: "form_decision", group: "self", label: "Request form updates", description: "When a request you sent through a form is approved or rejected." },
   { key: "learning", group: "self", label: "Courses and policies", description: "When a course or policy is assigned to you, and a reminder before it's due." },
   { key: "helpdesk_updates", group: "self", label: "Helpdesk replies", description: "When the team replies to or resolves a ticket you raised." },
   { key: "leave_to_approve", group: "approver", label: "Leave waiting for me", description: "When a leave request reaches your step in the approval chain." },
@@ -71,6 +74,7 @@ export const NOTIFICATIONS: NotificationDef[] = [
   { key: "id_expiry", group: "approver", label: "Expiring IDs and visas", description: "Before a passport, visa or permit expires: your own, or anyone's if you're HR." },
   { key: "probation_due", group: "approver", label: "Probation reviews due", description: "Before probation ends for someone on your team, or anyone if you're HR." },
   { key: "privacy_requests", group: "approver", label: "Data erasure requests", description: "When an employee asks the company to erase their personal data (HR only)." },
+  { key: "forms_to_approve", group: "approver", label: "Requests to approve", description: "When a request sent through a form is waiting for you." },
   { key: "resignation_submitted", group: "approver", label: "Resignations", description: "When someone on your team, or anyone if you're HR, resigns." },
 ];
 
