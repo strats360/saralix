@@ -67,9 +67,6 @@ Engagement, company KYC, and OKRs, feedback and 1:1s.
 ### Changed
 
 - The self-service top bar now fits next to the Admin console button: Kudos, Help and Concerns moved under More, and screens narrower than 1280 pixels use the bottom tab bar.
-
-### Changed
-
 - Companies that already exist, the demo and companies the platform team creates count as verified, so nothing changes for them.
 
 ## [1.2.1] - 2026-11-26
