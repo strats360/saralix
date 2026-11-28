@@ -6,18 +6,7 @@ Versions follow [semantic versioning](https://semver.org): **major** for changes
 
 ## [Unreleased]
 
-### Added
-
-- Paid add-ons. The platform team sets each add-on's name, description and price (per employee or flat, a month) under Plans & pricing, and whether it's on sale. Companies switch add-ons on and off under Settings → Billing, with a monthly estimate for their headcount; they're free during the trial. Each add-on that was on during a month is its own line on that month's invoice, with GST. A feature flag on the same key can give one free to a company for a pilot.
-- The first four add-ons are in the catalogue (AI assistant, Sign in and work tools, Face attendance kiosk, Forms and workflows), not on sale yet. Each goes on sale when its feature ships.
-- Zapier. A Zapier app in `integrations/zapier` with instant triggers (new employee, updated employee, exit completed, leave approved, payroll approved, payroll paid) and an Add Employee action. See its README to publish it.
-- Public API additions for Zapier and similar tools: `GET /v1/me`, subscribe and unsubscribe webhooks (`/v1/hooks`), recent event samples, and `POST /v1/employees` to add an employee who then gets the onboarding email. Two new key scopes: "Add employees" and "Subscribe to events".
-- Read a receipt. When an employee attaches a receipt photo to a claim, "Fill in from the receipt" reads the amount, date, seller, and the GSTIN and GST where the category collects them. It runs in the browser (Tesseract, served from our own site), so the photo never leaves the device, and the person checks the values before submitting.
-- Travel requests. Employees ask before a trip (where, when, how, estimated cost) under Claims, with an advance if they need one. The manager approves; finance also approves trips with an advance and records when it's paid. Claims can be linked to an approved trip. Once the trip is over and its claims are decided, finance settles it: the claims are paid with salary as usual and the advance becomes a one month recovery in the next payroll, so the person nets exactly what they spent. Admins see trips under Reimbursements → Travel.
-- Learning. HR builds short courses (lessons with text and a video link, then an optional quiz with a pass mark) and policies to read and confirm (attach the PDF or write it in). Publish one for everyone or chosen departments and branches; people who join later get it too, each with their own due date. Everyone gets an email, a reminder two days before it's due, and a note on their Home page. HR sees who's done it, who's overdue and quiz scores, and can send a reminder. Under Company → Learning, and Learning in the employee app.
-- Forms and workflows (paid add-on). HR builds its own request forms (short and long answers, numbers, dates, pick one, yes or no, and file uploads) and sets up to five approval steps in order: the person's manager, a named person, or HR. Employees send requests under Forms; each approver gets an email and approves or rejects with a note, and the person hears the outcome. A manager step is skipped for people without one. HR sees every request, the ones waiting for HR, and can export a form's requests as CSV. Under Company → Forms when the add-on is on.
-- The employee app's top bar is slimmer. Payslips and tax share one Pay tab, and your profile, sign-in and security, dark mode and sign out are in a menu under your initials.
-- Face attendance kiosk (paid add-on). Any tablet or phone with a front camera becomes a kiosk: open app.saralix.com/kiosk and type the pairing code from Attendance → Face kiosk. People look at it and blink to punch in and out, so a photo held up to the camera can't punch for someone (HR can switch the blink check off per kiosk, and "Test the blink check" shows whether a device is quick enough to catch blinks). It greets them by name, ignores a second punch within two minutes, and shows "Not you?" for a few seconds to take a wrong punch back. Faces are turned into numbers on the device, and matching happens on our server against faces people enrolled with their consent, either themselves from the employee app (Face punch) or by HR with the person present. Each punch keeps a small photo for 90 days so HR can check it under Activity. Removing a face, or a DPDP erasure, deletes the face data and the photos.
+Nothing yet.
 
 ### Planned
 
@@ -30,6 +19,30 @@ These need something from us before they can be built or switched on:
 - State minimum wage tables by zone and skill, and an ESI and PT check against a second source (network access to hrengage.ai).
 - A staging site, and the Gulf, Saudi, UK, US and Canada sites (a Neon database and GitHub environment for each). The country packs are already built.
 - Expert review of the golden payroll files and of the flexible benefit caps.
+
+## [1.4.0] - 2026-11-28
+
+Learning, travel requests, receipt reading, Zapier, and the first paid add-ons: forms and workflows, and the face attendance kiosk.
+
+### Added
+
+- Paid add-ons. The platform team sets each add-on's name, description and price (per employee or flat, a month) under Plans & pricing, and whether it's on sale. Companies switch add-ons on and off under Settings → Billing, with a monthly estimate for their headcount; they're free during the trial. Each add-on that was on during a month is its own line on that month's invoice, with GST. A feature flag on the same key can give one free to a company for a pilot.
+- The first four add-ons are in the catalogue (AI assistant, Sign in and work tools, Face attendance kiosk, Forms and workflows), not on sale yet. Each goes on sale when its feature ships.
+- Zapier. A Zapier app in `integrations/zapier` with instant triggers (new employee, updated employee, exit completed, leave approved, payroll approved, payroll paid) and an Add Employee action. See its README to publish it.
+- Public API additions for Zapier and similar tools: `GET /v1/me`, subscribe and unsubscribe webhooks (`/v1/hooks`), recent event samples, and `POST /v1/employees` to add an employee who then gets the onboarding email. Two new key scopes: "Add employees" and "Subscribe to events".
+- Read a receipt. When an employee attaches a receipt photo to a claim, "Fill in from the receipt" reads the amount, date, seller, and the GSTIN and GST where the category collects them. It runs in the browser (Tesseract, served from our own site), so the photo never leaves the device, and the person checks the values before submitting.
+- Travel requests. Employees ask before a trip (where, when, how, estimated cost) under Claims, with an advance if they need one. The manager approves; finance also approves trips with an advance and records when it's paid. Claims can be linked to an approved trip. Once the trip is over and its claims are decided, finance settles it: the claims are paid with salary as usual and the advance becomes a one month recovery in the next payroll, so the person nets exactly what they spent. Admins see trips under Reimbursements → Travel.
+- Learning. HR builds short courses (lessons with text and a video link, then an optional quiz with a pass mark) and policies to read and confirm (attach the PDF or write it in). Publish one for everyone or chosen departments and branches; people who join later get it too, each with their own due date. Everyone gets an email, a reminder two days before it's due, and a note on their Home page. HR sees who's done it, who's overdue and quiz scores, and can send a reminder. Under Company → Learning, and Learning in the employee app.
+- Forms and workflows (paid add-on). HR builds its own request forms (short and long answers, numbers, dates, pick one, yes or no, and file uploads) and sets up to five approval steps in order: the person's manager, a named person, or HR. Employees send requests under Forms; each approver gets an email and approves or rejects with a note, and the person hears the outcome. A manager step is skipped for people without one. HR sees every request, the ones waiting for HR, and can export a form's requests as CSV. Under Company → Forms when the add-on is on.
+- Face attendance kiosk (paid add-on). Any tablet or phone with a front camera becomes a kiosk: open app.saralix.com/kiosk and type the pairing code from Attendance → Face kiosk. People look at it and blink to punch in and out, so a photo held up to the camera can't punch for someone (HR can switch the blink check off per kiosk, and "Test the blink check" shows whether a device is quick enough to catch blinks). It greets them by name, ignores a second punch within two minutes, and shows "Not you?" for a few seconds to take a wrong punch back. Faces are turned into numbers on the device, and matching happens on our server against faces people enrolled with their consent, either themselves from the employee app (Face punch) or by HR with the person present. Each punch keeps a small photo for 90 days so HR can check it under Activity. Removing a face, or a DPDP erasure, deletes the face data and the photos.
+
+### Changed
+
+- The employee app's top bar is slimmer. Payslips and tax share one Pay tab, and your profile, sign-in and security, dark mode and sign out are in a menu under your initials.
+
+### Before you sell the add-ons
+
+- Forms and workflows and the face attendance kiosk are built but not on sale. Switch each on sale and set its price under Plans & pricing in the console.
 
 ## [1.3.0] - 2026-11-26
 
@@ -148,7 +161,8 @@ The first release: the India site at app.saralix.com, with everything built so f
 - Reports, and free income tax and gratuity calculators at /tools.
 - Multi-country groundwork: country packs for the UAE, Saudi Arabia, Qatar, Kuwait, Oman, Bahrain, the UK, the US and Canada; a control plane with one sign in page; wave rollouts, monitoring, backups and restore drills.
 
-[Unreleased]: https://github.com/strats360/saralix/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/strats360/saralix/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/strats360/saralix/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/strats360/saralix/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/strats360/saralix/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/strats360/saralix/compare/v1.1.0...v1.2.0
