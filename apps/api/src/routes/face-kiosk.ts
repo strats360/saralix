@@ -31,7 +31,7 @@ async function newKey(deviceId: string) {
   return { key: `dev_${deviceId}.${secret}`, keyHash: await sha256Hex(secret), keyHint: secret.slice(-4) };
 }
 
-const view = (d: Device, branch?: string | null) => ({ id: d.id, name: d.name, branchId: d.branchId, branch: branch ?? null, active: d.active, paired: !d.pairCodeHash || !!d.lastSeenAt, pairExpiresAt: d.pairCodeHash ? d.pairExpiresAt : null, lastSeenAt: d.lastSeenAt, lastPunchAt: d.lastPunchAt, punchCount: d.punchCount, createdAt: d.createdAt });
+const view = (d: Device, branch?: string | null) => ({ id: d.id, name: d.name, branchId: d.branchId, branch: branch ?? null, active: d.active, requireBlink: d.requireBlink, paired: !d.pairCodeHash || !!d.lastSeenAt, pairExpiresAt: d.pairCodeHash ? d.pairExpiresAt : null, lastSeenAt: d.lastSeenAt, lastPunchAt: d.lastPunchAt, punchCount: d.punchCount, createdAt: d.createdAt });
 
 async function saveSamples(db: Database, tenantId: string, employeeId: string, samples: number[][], via: "self" | "hr", by: string) {
   if (!consistentSamples(samples)) throw badRequest("The photos don't look like the same person. Make sure only one face is in view and try again.");
@@ -75,11 +75,11 @@ faceKioskRoutes.post("/kiosks/:id/pair", async (c) => {
   return c.json({ ...view(row!), code });
 });
 
-faceKioskRoutes.patch("/kiosks/:id", v("json", z.object({ active: z.boolean().optional(), name: z.string().trim().min(2).max(80).optional() })), async (c) => {
+faceKioskRoutes.patch("/kiosks/:id", v("json", z.object({ active: z.boolean().optional(), requireBlink: z.boolean().optional(), name: z.string().trim().min(2).max(80).optional() })), async (c) => {
   const b = c.req.valid("json");
   const [row] = await c.get("db").update(attendanceDevices).set(b).where(and(eq(attendanceDevices.id, c.req.param("id")), eq(attendanceDevices.tenantId, tid(c)), eq(attendanceDevices.kind, "kiosk"))).returning();
   if (!row) throw notFound("Kiosk");
-  await audit(c, { action: "kiosk.update", entity: "attendance_device", entityId: row.id, summary: `${b.active === false ? "Turned off" : b.active ? "Turned on" : "Renamed"} face kiosk ${row.name}` });
+  await audit(c, { action: "kiosk.update", entity: "attendance_device", entityId: row.id, summary: `${b.active === false ? "Turned off" : b.active ? "Turned on" : b.requireBlink === false ? "Stopped asking for a blink on" : b.requireBlink ? "Started asking for a blink on" : "Renamed"} face kiosk ${row.name}` });
   return c.json(view(row));
 });
 
@@ -116,7 +116,7 @@ faceKioskRoutes.get("/events", async (c) => {
   const result = c.req.query("result");
   const rows = await c
     .get("db")
-    .select({ id: kioskEvents.id, result: kioskEvents.result, distance: kioskEvents.distance, hasPhoto: sql<boolean>`${kioskEvents.photoKey} is not null`, createdAt: kioskEvents.createdAt, kiosk: attendanceDevices.name, employee: employees.fullName, code: employees.employeeCode })
+    .select({ id: kioskEvents.id, result: kioskEvents.result, distance: kioskEvents.distance, blinked: kioskEvents.blinked, hasPhoto: sql<boolean>`${kioskEvents.photoKey} is not null`, createdAt: kioskEvents.createdAt, kiosk: attendanceDevices.name, employee: employees.fullName, code: employees.employeeCode })
     .from(kioskEvents)
     .innerJoin(attendanceDevices, eq(attendanceDevices.id, kioskEvents.deviceId))
     .leftJoin(employees, eq(employees.id, kioskEvents.employeeId))
@@ -189,7 +189,7 @@ async function kiosk(c: Context<AppEnv>) {
 kioskPublicRoutes.get("/me", async (c) => {
   const { d, company } = await kiosk(c);
   await c.get("db").update(attendanceDevices).set({ lastSeenAt: new Date() }).where(eq(attendanceDevices.id, d.id));
-  return c.json({ name: d.name, company });
+  return c.json({ name: d.name, company, requireBlink: d.requireBlink });
 });
 
 kioskPublicRoutes.post("/punch", v("json", kioskPunchSchema), async (c) => {
@@ -201,6 +201,7 @@ kioskPublicRoutes.post("/punch", v("json", kioskPunchSchema), async (c) => {
     .from(faceTemplates)
     .innerJoin(employees, eq(employees.id, faceTemplates.employeeId))
     .where(and(eq(faceTemplates.tenantId, d.tenantId), inArray(employees.status, ACTIVE)));
+  if (d.requireBlink && !b.blink) throw badRequest("Blink to punch");
   const match = matchFace(b.descriptor, people);
   const eventId = crypto.randomUUID();
   let photoKey: string | null = null;
@@ -211,7 +212,7 @@ kioskPublicRoutes.post("/punch", v("json", kioskPunchSchema), async (c) => {
       await putFile(c.env, photoKey, bytes.buffer as ArrayBuffer, "image/jpeg");
     }
   }
-  const log = (result: string, employeeId: string | null, punchedAt: Date | null = null) => db.insert(kioskEvents).values({ id: eventId, tenantId: d.tenantId, deviceId: d.id, employeeId, result, distance: match.distance, photoKey, punchedAt });
+  const log = (result: string, employeeId: string | null, punchedAt: Date | null = null) => db.insert(kioskEvents).values({ id: eventId, tenantId: d.tenantId, deviceId: d.id, employeeId, result, distance: match.distance, blinked: b.blink, photoKey, punchedAt });
   if (match.status !== "matched") {
     await log(match.status, null);
     return c.json({ result: match.status });

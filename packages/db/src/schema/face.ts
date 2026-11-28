@@ -1,4 +1,4 @@
-import { index, jsonb, pgTable, real, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, real, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { tenantIdColumn as tenantId } from "./org";
 import { employees } from "./people";
 import { attendanceDevices } from "./time";
@@ -36,6 +36,8 @@ export const kioskEvents = pgTable(
     /** punched | repeat | unknown | unsure | undone */
     result: text("result").notNull(),
     distance: real("distance"),
+    /** The face blinked before the punch. */
+    blinked: boolean("blinked").notNull().default(false),
     photoKey: text("photo_key"),
     punchedAt: timestamp("punched_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

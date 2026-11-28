@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { confirmAction } from "@/components/ui/confirm";
 import { ErrorState, Loading, Notice } from "@/components/ui/page";
 import { FaceEnroll } from "@/components/face/FaceEnroll";
+import { BlinkTest } from "@/components/face/BlinkTest";
 
 export const useMyFace = (enabled = true) => useQuery({ queryKey: ["face", "mine"], queryFn: () => api.get<{ enrolled: boolean; enrolledAt: string | null; via: string | null }>("/ess/face"), enabled });
 
@@ -35,6 +36,13 @@ export default function MyFace() {
         <div className="text-muted text-[13px]">Good light, no cap or sunglasses. It takes three quick readings.</div>
         <FaceEnroll who="I" consentText="I agree to my face being used to record my attendance. I can remove it here at any time." busy={save.isPending} onDone={(d) => save.mutate(d)} />
       </Card>
+      {q.data.enrolled ? (
+        <Card className="gap-3">
+          <div className="text-[15px] font-medium">Practise the blink</div>
+          <div className="text-muted text-[13px]">The kiosk asks you to blink before it punches, so nobody can punch for you with a photo.</div>
+          <BlinkTest />
+        </Card>
+      ) : null}
       {q.data.enrolled ? (
         <Button className="self-start" loading={remove.isPending} onClick={async () => { if (await confirmAction({ title: "Remove your face?", body: "The kiosk won't recognise you until you set it up again.", confirmLabel: "Remove", danger: true })) remove.mutate(); }}>Remove my face</Button>
       ) : null}

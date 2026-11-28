@@ -61,24 +61,29 @@ describe("Face kiosk", () => {
 
   it("punches the right person, ignores a quick repeat, and lets them undo", async () => {
     const photo = "data:image/jpeg;base64," + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]).toString("base64");
-    const r = await asKiosk("/punch", { descriptor: vec(1, 3), photo });
+    // the kiosk asks for a blink by default
+    expect((await asKiosk("/me")).body.requireBlink).toBe(true);
+    expect((await asKiosk("/punch", { descriptor: vec(1, 3), photo })).status).toBe(400);
+    const r = await asKiosk("/punch", { descriptor: vec(1, 3), photo, blink: true });
     expect(r.body).toMatchObject({ result: "punched", name: "Priya Vaghela", direction: expect.stringMatching(/in|out/) });
     eventId = r.body.eventId;
     const [{ n }] = (await sql`select count(*)::int as n from attendance_punches where device_id = ${kioskId} and employee_id = ${priyaId}`) as any;
     expect(n).toBe(1);
-    expect((await asKiosk("/punch", { descriptor: vec(1, 4) })).body.result).toBe("repeat");
-    expect((await asKiosk("/punch", { descriptor: vec(9) })).body.result).toBe("unknown");
+    expect((await asKiosk("/punch", { descriptor: vec(1, 4), blink: true })).body.result).toBe("repeat");
+    expect((await asKiosk("/punch", { descriptor: vec(9), blink: true })).body.result).toBe("unknown");
     expect((await asKiosk("/undo", { eventId })).status).toBe(200);
     const [{ m }] = (await sql`select count(*)::int as m from attendance_punches where device_id = ${kioskId} and employee_id = ${priyaId}`) as any;
     expect(m).toBe(0);
     const events = (await kunal.get("/admin/face-kiosk/events")).body;
     expect(events.map((e: any) => e.result)).toEqual(expect.arrayContaining(["undone", "repeat", "unknown"]));
     const shot = events.find((e: any) => e.result === "undone");
-    expect(shot.hasPhoto).toBe(true);
+    expect(shot).toMatchObject({ hasPhoto: true, blinked: true });
     expect((await kunal.get(`/admin/face-kiosk/events/${shot.id}/photo`)).status).toBe(200);
   });
 
   it("stops when HR turns the kiosk off or the person removes their face", async () => {
+    // HR can turn the blink check off for a kiosk
+    await kunal.req("PATCH", `/admin/face-kiosk/kiosks/${kioskId}`, { requireBlink: false });
     await priya.del("/ess/face");
     expect((await asKiosk("/punch", { descriptor: vec(1, 3) })).body.result).toBe("unknown");
     await kunal.req("PATCH", `/admin/face-kiosk/kiosks/${kioskId}`, { active: false });

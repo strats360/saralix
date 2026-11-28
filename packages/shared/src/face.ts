@@ -27,6 +27,8 @@ export const kioskPunchSchema = z.object({
   descriptor,
   /** A small JPEG of the moment, as a data URL, kept so HR can check a punch. */
   photo: z.string().startsWith("data:image/jpeg;base64,").max(200_000).optional(),
+  /** The kiosk saw this face blink just before the punch. */
+  blink: z.boolean().default(false),
 });
 
 export const kioskPairSchema = z.object({ code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{8}$/, "Enter the 8 character code") });
@@ -62,4 +64,69 @@ export function matchFace(probe: readonly number[], people: { id: string; sample
   if (!best || best.d >= FACE_MATCH_THRESHOLD) return { status: "unknown", distance: best?.d ?? null };
   if (next && next.d - best.d < FACE_MATCH_MARGIN) return { status: "unsure", distance: best.d };
   return { status: "matched", id: best.id, distance: best.d };
+}
+
+/* ---------------- liveness: a blink ---------------- */
+
+type Pt = { x: number; y: number };
+const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+
+/**
+ * How open an eye is, from its six landmarks (corner, two top, corner, two bottom): the eye's
+ * height over its width. About 0.25 to 0.35 open, falling towards 0.1 when closed.
+ */
+export function eyeAspectRatio(eye: readonly Pt[]) {
+  if (eye.length !== 6) return 0;
+  const [p1, p2, p3, p4, p5, p6] = eye as [Pt, Pt, Pt, Pt, Pt, Pt];
+  const w = dist(p1, p4);
+  return w ? (dist(p2, p6) + dist(p3, p5)) / (2 * w) : 0;
+}
+
+export const BLINK = {
+  /** Eyes count as closed below this share of the person's open-eye level. */
+  closed: 0.75,
+  /** And open again above this share. */
+  open: 0.9,
+  /** A real blink is quick; eyes shut longer than this (looking down, a photo) don't count. */
+  maxClosedMs: 1200,
+  /** Readings needed to learn how open this person's eyes are. */
+  warmup: 3,
+} as const;
+
+/**
+ * Watches eye openness frame by frame and says when a full blink (open, closed, open) happened.
+ * A printed photo or a still on a phone screen never blinks. Feed it the average of both eyes.
+ */
+export function blinkDetector() {
+  let open: number[] = [];
+  let closedAt: number | null = null;
+  return {
+    push(ear: number, at: number): boolean {
+      const baseline = open.length ? Math.max(...open) : 0;
+      if (closedAt === null) {
+        if (open.length >= BLINK.warmup && ear < baseline * BLINK.closed) {
+          closedAt = at;
+          return false;
+        }
+        open = [...open, ear].slice(-12);
+        return false;
+      }
+      if (at - closedAt > BLINK.maxClosedMs) {
+        // closed for too long: start again
+        closedAt = null;
+        open = [];
+        return false;
+      }
+      if (ear > baseline * BLINK.open) {
+        closedAt = null;
+        open = [ear];
+        return true;
+      }
+      return false;
+    },
+    reset() {
+      open = [];
+      closedAt = null;
+    },
+  };
 }

@@ -17,10 +17,11 @@ import { PillTabs } from "@/components/ui/tabs";
 import { Tag, type Tone } from "@/components/ui/tag";
 import { useLookups } from "@/components/recruitment/shared";
 import { FaceEnroll } from "@/components/face/FaceEnroll";
+import { BlinkTest } from "@/components/face/BlinkTest";
 
-interface KioskRow { id: string; name: string; branchId: string | null; branch: string | null; active: boolean; paired: boolean; pairExpiresAt: string | null; lastSeenAt: string | null; lastPunchAt: string | null; punchCount: number; code?: string }
+interface KioskRow { id: string; name: string; branchId: string | null; branch: string | null; active: boolean; requireBlink: boolean; paired: boolean; pairExpiresAt: string | null; lastSeenAt: string | null; lastPunchAt: string | null; punchCount: number; code?: string }
 interface Person { id: string; name: string; code: string; enrolledAt: string | null; via: "self" | "hr" | null }
-interface Event { id: string; result: string; distance: number | null; hasPhoto: boolean; createdAt: string; kiosk: string; employee: string | null; code: string | null }
+interface Event { id: string; result: string; distance: number | null; blinked: boolean; hasPhoto: boolean; createdAt: string; kiosk: string; employee: string | null; code: string | null }
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "Never");
 const RESULT: Record<string, [string, Tone]> = { punched: ["Punched", "ok"], repeat: ["Repeat, ignored", "neutral"], unknown: ["Not recognised", "warn"], unsure: ["Unsure, asked again", "warn"], undone: ["Taken back", "bad"] };
@@ -43,15 +44,24 @@ function Kiosks() {
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState({ name: "", branchId: "" });
   const [code, setCode] = useState<{ name: string; code: string } | null>(null);
+  const [testing, setTesting] = useState(false);
   const add = useMutation({ mutationFn: () => api.post<KioskRow>("/admin/face-kiosk/kiosks", { name: f.name, branchId: f.branchId || null }), onSuccess: (r) => (setAdding(false), setF({ name: "", branchId: "" }), setCode({ name: r.name, code: r.code! }), qc.invalidateQueries({ queryKey: ["kiosks"] })), onError: (e) => toast.error(errorMessage(e)) });
   const pair = useMutation({ mutationFn: (k: KioskRow) => api.post<KioskRow>(`/admin/face-kiosk/kiosks/${k.id}/pair`), onSuccess: (r) => (setCode({ name: r.name, code: r.code! }), qc.invalidateQueries({ queryKey: ["kiosks"] })), onError: (e) => toast.error(errorMessage(e)) });
   const toggle = useMutation({ mutationFn: (k: KioskRow) => api.patch(`/admin/face-kiosk/kiosks/${k.id}`, { active: !k.active }), onSuccess: () => qc.invalidateQueries({ queryKey: ["kiosks"] }), onError: (e) => toast.error(errorMessage(e)) });
+  const blink = useMutation({ mutationFn: (k: KioskRow) => api.patch(`/admin/face-kiosk/kiosks/${k.id}`, { requireBlink: !k.requireBlink }), onSuccess: () => qc.invalidateQueries({ queryKey: ["kiosks"] }), onError: (e) => toast.error(errorMessage(e)) });
+  const askBlink = async (k: KioskRow) => {
+    if (k.requireBlink && !(await confirmAction({ title: "Stop asking for a blink?", body: "Without it, a photo of someone held up to the camera could punch them in. Turn it off only if the camera can't keep up.", confirmLabel: "Stop asking", danger: true }))) return;
+    blink.mutate(k);
+  };
   const link = `${location.origin}/kiosk`;
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-muted max-w-[640px] text-[13px]">Any tablet or phone with a front camera can be a kiosk. Open <span className="font-medium">{link}</span> in its browser and type the pairing code. Put it at the entrance, plugged in, at face height.</div>
-        <Button variant="primary" onClick={() => setAdding(true)}><Plus size={16} /> Add kiosk</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setTesting(true)}>Test the blink check</Button>
+          <Button variant="primary" onClick={() => setAdding(true)}><Plus size={16} /> Add kiosk</Button>
+        </div>
       </div>
       {q.error ? <ErrorState error={q.error} retry={() => q.refetch()} /> : null}
       {q.data && !q.data.length ? <Card><Empty title="No kiosks yet" sub="Add one, then pair a tablet or phone at the entrance." /></Card> : null}
@@ -65,12 +75,15 @@ function Kiosks() {
                 <div className="text-muted text-[12.5px]">{k.branch ?? "Any branch"} · last seen {when(k.lastSeenAt)}</div>
               </div>
               <Tag tone={!k.active ? "outline" : k.pairExpiresAt ? "warn" : "ok"}>{!k.active ? "Off" : k.pairExpiresAt ? "Waiting to pair" : "Running"}</Tag>
-              <Menu trigger={<Button size="sm">More</Button>} items={[{ label: "New pairing code", onSelect: () => pair.mutate(k) }, { label: k.active ? "Turn off" : "Turn on", onSelect: () => toggle.mutate(k), danger: k.active }]} />
+              <Menu trigger={<Button size="sm">More</Button>} items={[{ label: "New pairing code", onSelect: () => pair.mutate(k) }, { label: k.requireBlink ? "Stop asking for a blink" : "Ask people to blink", onSelect: () => void askBlink(k) }, { label: k.active ? "Turn off" : "Turn on", onSelect: () => toggle.mutate(k), danger: k.active }]} />
             </div>
-            <div className="text-muted text-[12.5px]"><span className="num">{k.punchCount}</span> punches · last punch {when(k.lastPunchAt)}</div>
+            <div className="text-muted text-[12.5px]"><span className="num">{k.punchCount}</span> punches · last punch {when(k.lastPunchAt)} · {k.requireBlink ? "asks for a blink" : <span style={{ color: "var(--warn-fg)" }}>no blink check</span>}</div>
           </Card>
         ))}
       </div>
+      <Dialog open={testing} onOpenChange={setTesting} title="Test the blink check" description="Kiosks ask people to blink, so a photo can't punch. Open this page on the tablet or phone you'll use as a kiosk and check it catches your blinks." width={460}>
+        {testing ? <BlinkTest /> : null}
+      </Dialog>
       <Dialog open={adding} onOpenChange={setAdding} title="Add a kiosk" footer={<><Button onClick={() => setAdding(false)}>Cancel</Button><Button variant="primary" disabled={f.name.trim().length < 2} loading={add.isPending} onClick={() => add.mutate()}>Add</Button></>}>
         <div className="flex flex-col gap-3">
           <Field label="Name" hint="Where it is, so you can tell kiosks apart."><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Main gate" maxLength={80} /></Field>
@@ -138,6 +151,7 @@ function Activity() {
       { id: "who", header: "Who", cell: ({ row: { original: e } }) => (e.employee ? <div><div>{e.employee}</div><div className="text-muted text-[12px]">{e.code}</div></div> : <span className="text-muted">Unknown face</span>) },
       { id: "result", header: "Result", accessorKey: "result", cell: ({ row: { original: e } }) => <Tag tone={RESULT[e.result]?.[1] ?? "neutral"}>{RESULT[e.result]?.[0] ?? e.result}</Tag> },
       { id: "match", header: "Match", cell: ({ row: { original: e } }) => (e.distance === null ? "—" : e.distance < 0.35 ? "Strong" : e.distance < 0.5 ? "Good" : "Weak") },
+      { id: "blink", header: "Blink", cell: ({ row: { original: e } }) => (e.blinked ? "Yes" : <span className="text-muted">No</span>) },
       { id: "kiosk", header: "Kiosk", accessorKey: "kiosk" },
       { id: "photo", header: "", cell: ({ row: { original: e } }) => (e.hasPhoto ? <Button size="sm" variant="ghost" aria-label="See the photo" onClick={() => openFile(`/admin/face-kiosk/events/${e.id}/photo`).catch((x) => toast.error(errorMessage(x)))}><Image size={15} /></Button> : null) },
     ],
@@ -147,7 +161,7 @@ function Activity() {
     <>
       <Segmented value={result} onChange={setResult} options={[{ value: "all", label: "Everything" }, { value: "punched", label: "Punches" }, { value: "unknown", label: "Not recognised" }, { value: "undone", label: "Taken back" }]} />
       <TableCard><DataTable data={q.data ?? []} columns={columns} getRowId={(r) => r.id} loading={q.isFetching} storageKey="kiosk-events" empty="Nothing yet." /></TableCard>
-      <div className="text-muted text-[12px]">Photos are kept for 90 days. A kiosk can be fooled by a good photo of someone; check the pictures if a punch looks wrong.</div>
+      <div className="text-muted text-[12px]">Photos are kept for 90 days. Kiosks ask people to blink, so a photo held up to the camera won't punch. A video of someone could still get through, so check the pictures if a punch looks wrong.</div>
     </>
   );
 }

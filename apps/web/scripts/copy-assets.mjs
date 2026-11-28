@@ -17,8 +17,8 @@ const sets = {
     // the integer English model: about 3 MB, good enough for printed receipts
     [join(pkg("@tesseract.js-data/eng"), "4.0.0_best_int", "eng.traineddata.gz"), "eng.traineddata.gz"],
   ],
-  // finding a face, its landmarks, and the 128 number descriptor: about 6.7 MB in all
-  face: ["tiny_face_detector_model", "face_landmark_68_tiny_model", "face_recognition_model"].flatMap((m) => [`${m}-weights_manifest.json`, `${m}.bin`]).map((f) => [join(pkg("@vladmandic/face-api"), "model", f), f]),
+  // finding a face, its landmarks, and the 128 number descriptor: about 7 MB in all; the full landmark model watches the eyes for a blink
+  face: ["tiny_face_detector_model", "face_landmark_68_tiny_model", "face_landmark_68_model", "face_recognition_model"].flatMap((m) => [`${m}-weights_manifest.json`, `${m}.bin`]).map((f) => [join(pkg("@vladmandic/face-api"), "model", f), f]),
 };
 
 let n = 0;

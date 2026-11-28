@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize, ScanFace, WifiOff } from "lucide-react";
-import { faceDistance } from "@hrms/shared";
-import { cameraError, loadFace, openCamera, readFace, snapshot } from "@/lib/face";
+import { blinkDetector, faceDistance } from "@hrms/shared";
+import { cameraError, loadFace, openCamera, readEyes, readFace, snapshot, type FaceRead } from "@/lib/face";
 import { SaralixTile } from "@/components/brand/Logo";
 
 const KEY = "saralix.kiosk.key";
@@ -46,13 +46,13 @@ const greet = () => {
 
 /** The face kiosk: runs in a browser on a tablet or phone at the entrance. */
 export default function Kiosk() {
-  const [paired, setPaired] = useState<{ name: string; company: string } | null>(null);
+  const [paired, setPaired] = useState<{ name: string; company: string; requireBlink: boolean } | null>(null);
   const [state, setState] = useState<"checking" | "pair" | "run" | "blocked">(getKey() ? "checking" : "pair");
   const [blocked, setBlocked] = useState("");
 
   const check = useCallback(async () => {
     try {
-      setPaired(await call<{ name: string; company: string }>("/me"));
+      setPaired(await call<{ name: string; company: string; requireBlink: boolean }>("/me"));
       setState("run");
     } catch (e) {
       if (e instanceof KioskError && e.status === 401) {
@@ -124,7 +124,7 @@ function Pair({ onPaired }: { onPaired: () => void }) {
   );
 }
 
-function Scanner({ info, onLost }: { info: { name: string; company: string }; onLost: () => void }) {
+function Scanner({ info, onLost }: { info: { name: string; company: string; requireBlink: boolean }; onLost: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
   const [now, setNow] = useState(new Date());
   const [status, setStatus] = useState<"loading" | "scanning" | "sending" | "result" | "error">("loading");
@@ -133,8 +133,7 @@ function Scanner({ info, onLost }: { info: { name: string; company: string }; on
   const [result, setResult] = useState<Result | null>(null);
   const [undoLeft, setUndoLeft] = useState(0);
   const [online, setOnline] = useState(navigator.onLine);
-  const busy = useRef(false);
-  const last = useRef<number[] | null>(null);
+    const last = useRef<number[] | null>(null);
   const resultTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -194,46 +193,86 @@ function Scanner({ info, onLost }: { info: { name: string; company: string }; on
     return () => clearTimeout(t);
   }, [undoLeft]);
 
-  // look for a face a few times a second; punch once the same face is seen twice in a row
+  const send = async (r: FaceRead, blink: boolean) => {
+    setHint("");
+    setStatus("sending");
+    const photo = snapshot(video.current!);
+    try {
+      show(await call<Result>("/punch", { descriptor: r.descriptor, photo, blink }));
+    } catch (e) {
+      if (e instanceof KioskError && (e.status === 401 || e.status === 403)) return onLost();
+      setHint(e instanceof Error ? e.message : "Couldn't record the punch");
+      setStatus("scanning");
+    }
+  };
+
+  // Without the blink check: punch once the same face is seen twice in a row.
+  // With it: watch the eyes quickly, and once they blink, read the face and punch.
   useEffect(() => {
     if (status !== "scanning") return;
     let alive = true;
+    let timer = 0;
+    const blink = blinkDetector();
+    let box: FaceRead["box"] | null = null;
+    let seenAt = 0;
+    const near = (a: FaceRead["box"], b: FaceRead["box"]) => Math.hypot(a.x + a.w / 2 - (b.x + b.w / 2), a.y + a.h / 2 - (b.y + b.h / 2)) < 0.12;
     const tick = async () => {
-      if (!alive || busy.current || !video.current) return;
-      busy.current = true;
+      if (!alive || !video.current) return;
+      const v = video.current;
       try {
-        const r = await readFace(video.current);
-        if (!r) {
-          setHint("");
-          last.current = null;
-        } else if (r.faces > 1) setHint("One person at a time, please");
-        else if (r.box.w < 0.18) setHint("Come a little closer");
-        else if (last.current && faceDistance(last.current, r.descriptor) < 0.35) {
-          setHint("");
-          setStatus("sending");
-          const photo = snapshot(video.current);
-          try {
-            show(await call<Result>("/punch", { descriptor: r.descriptor, photo }));
-          } catch (e) {
-            if (e instanceof KioskError && (e.status === 401 || e.status === 403)) return onLost();
-            setHint(e instanceof Error ? e.message : "Couldn't record the punch");
-            setStatus("scanning");
+        if (info.requireBlink) {
+          const e = await readEyes(v);
+          if (!alive) return;
+          if (!e) {
+            setHint("");
+            blink.reset();
+            box = null;
+            seenAt = 0;
+          } else if (e.faces > 1) {
+            setHint("One person at a time, please");
+            blink.reset();
+          } else if (e.box.w < 0.18) {
+            setHint("Come a little closer");
+            blink.reset();
+          } else {
+            // a different face stepped in: start watching again
+            if (box && !near(box, e.box)) (blink.reset(), (seenAt = 0));
+            box = e.box;
+            seenAt ||= performance.now();
+            if (blink.push(e.ear, performance.now())) {
+              const r = await readFace(v);
+              if (!alive) return;
+              if (r && r.faces === 1 && near(r.box, e.box)) return void (await send(r, true));
+              setHint("Blink once more");
+            } else setHint(performance.now() - seenAt > 5000 ? "Blink slowly, once" : "Blink to punch");
           }
-          last.current = null;
         } else {
-          last.current = r.descriptor;
-          setHint("Hold still");
+          const r = await readFace(v);
+          if (!alive) return;
+          if (!r) {
+            setHint("");
+            last.current = null;
+          } else if (r.faces > 1) setHint("One person at a time, please");
+          else if (r.box.w < 0.18) setHint("Come a little closer");
+          else if (last.current && faceDistance(last.current, r.descriptor) < 0.35) {
+            last.current = null;
+            return void (await send(r, false));
+          } else {
+            last.current = r.descriptor;
+            setHint("Hold still");
+          }
         }
-      } finally {
-        busy.current = false;
+      } catch {
+        /* a dropped frame: carry on */
       }
+      if (alive) timer = window.setTimeout(() => void tick(), info.requireBlink ? 40 : 300);
     };
-    const t = setInterval(() => void tick(), 350);
+    void tick();
     return () => {
       alive = false;
-      clearInterval(t);
+      clearTimeout(timer);
     };
-  }, [status, onLost]);
+  }, [status, info.requireBlink]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const undo = async () => {
     if (result?.result !== "punched") return;
@@ -298,10 +337,10 @@ function Scanner({ info, onLost }: { info: { name: string; company: string }; on
               )}
             </Overlay>
           ) : null}
-          {status === "scanning" || status === "sending" ? <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10 text-center text-[17px]">{status === "sending" ? "One moment…" : hint || "Look at the camera to punch in or out"}</div> : null}
+          {status === "scanning" || status === "sending" ? <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10 text-center text-[17px]">{status === "sending" ? "One moment…" : hint || (info.requireBlink ? "Look at the camera and blink to punch" : "Look at the camera to punch in or out")}</div> : null}
         </div>
       </div>
-      <footer className="px-5 pb-[max(14px,env(safe-area-inset-bottom))] text-center text-[11.5px] text-white/45">Your face is matched by Saralix for attendance only. A photo of each punch is kept for 90 days.</footer>
+      <footer className="px-5 pb-[max(14px,env(safe-area-inset-bottom))] text-center text-[11.5px] text-white/45">Your face is matched by Saralix for attendance only.{info.requireBlink ? " Blink to show you're really here." : ""} A photo of each punch is kept for 90 days.</footer>
     </>
   );
 }

@@ -64,3 +64,31 @@ export const cameraError = (e: unknown) =>
     : e instanceof DOMException && e.name === "NotFoundError"
       ? "No camera found on this device."
       : "Couldn't start the camera or load the face models. Check the connection and reload.";
+
+export interface EyesRead {
+  /** Eye openness, both eyes averaged. */
+  ear: number;
+  box: FaceRead["box"];
+  faces: number;
+}
+
+let eyesReady: Promise<void> | null = null;
+
+/** A quick look: where the face is and how open the eyes are. Fast enough to catch a blink. */
+export async function readEyes(video: HTMLVideoElement): Promise<EyesRead | null> {
+  const faceapi = await loadFace();
+  // the full landmark model places the eyelids more precisely than the tiny one
+  eyesReady ??= faceapi.nets.faceLandmark68Net.loadFromUri("/face").catch((e) => {
+    eyesReady = null;
+    throw e;
+  });
+  await eyesReady;
+  if (!video.videoWidth) return null;
+  const all = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })).withFaceLandmarks(false);
+  if (!all.length) return null;
+  const best = all.sort((a, b) => b.detection.box.area - a.detection.box.area)[0]!;
+  const { eyeAspectRatio } = await import("@hrms/shared");
+  const ear = (eyeAspectRatio(best.landmarks.getLeftEye()) + eyeAspectRatio(best.landmarks.getRightEye())) / 2;
+  const b = best.detection.box;
+  return { ear, box: { x: b.x / video.videoWidth, y: b.y / video.videoHeight, w: b.width / video.videoWidth, h: b.height / video.videoHeight }, faces: all.length };
+}

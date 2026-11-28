@@ -449,6 +449,13 @@
       "when": 1795794665444,
       "tag": "0063_face_kiosk",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1795867489474,
+      "tag": "0064_kiosk_blink",
+      "breakpoints": true
     }
   ]
 }

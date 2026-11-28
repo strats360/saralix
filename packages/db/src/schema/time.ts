@@ -188,6 +188,8 @@ export const attendanceDevices = pgTable(
     punchCount: integer("punch_count").notNull().default(0),
     /** biometric: a machine that pushes punches; kiosk: the face kiosk page on a tablet or phone. */
     kind: text("kind").notNull().default("biometric"),
+    /** Kiosks only: ask people to blink, so a photo held up to the camera doesn't punch. */
+    requireBlink: boolean("require_blink").notNull().default(true),
     /** One-time code to pair a kiosk, hashed, and when it stops working. */
     pairCodeHash: text("pair_code_hash"),
     pairExpiresAt: timestamp("pair_expires_at", { withTimezone: true }),
